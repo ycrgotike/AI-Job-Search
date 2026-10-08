@@ -232,5 +232,32 @@ class GeminiTests(unittest.TestCase):
         loc7 = g.extract_company_location('Bereitschaft zur Arbeit im Kölner Büro an 3 Tagen.')
         self.assertEqual(loc7, 'Köln, Germany')
 
+    def test_skills_empty_group_pruned_and_supplemented(self):
+        draft, evidence = self.fixture()
+        # 2 valid groups + 1 empty group
+        draft['skills'] = [
+            {'label': 'Technical Skills', 'terms': ['Python', 'SQL', 'PyTorch']},
+            {'label': 'AI & Infrastructure', 'terms': ['AWS', 'GCP']},
+            {'label': 'Research Interests', 'terms': []}
+        ]
+        profile = g.profile_text()
+        words = m.validate(draft, evidence, profile, 'closing text')
+        self.assertGreaterEqual(words, 300)
+        self.assertGreaterEqual(len(draft['skills']), 3)
+        self.assertTrue(all(len(group['terms']) > 0 for group in draft['skills']))
+
+    def test_skills_mixed_unsupported_terms_pruned(self):
+        draft, evidence = self.fixture()
+        draft['skills'] = [
+            {'label': 'Technical Skills', 'terms': ['Python', 'SQL', 'CompletelyInventedTerm123']},
+            {'label': 'Cloud', 'terms': ['Docker', 'Git']},
+            {'label': 'ML', 'terms': ['PyTorch']}
+        ]
+        profile = g.profile_text()
+        words = m.validate(draft, evidence, profile, 'closing text')
+        self.assertGreaterEqual(words, 300)
+        self.assertNotIn('CompletelyInventedTerm123', draft['skills'][0]['terms'])
+        self.assertIn('Python', draft['skills'][0]['terms'])
+
 if __name__=='__main__':unittest.main()
 

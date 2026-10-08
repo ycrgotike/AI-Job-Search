@@ -151,7 +151,7 @@ STRINGS = {'type': 'array', 'items': STRING}
 SCHEMA = obj({
     'summaries': {'type': 'array', 'items': STRING, 'minItems': 3, 'maxItems': 3},
     'header': STRING,
-    'skills': {'type': 'array', 'items': obj({'label': STRING, 'terms': STRINGS}), 'minItems': 3, 'maxItems': 5},
+    'skills': {'type': 'array', 'items': obj({'label': STRING, 'terms': {'type': 'array', 'items': STRING, 'minItems': 2}}), 'minItems': 3, 'maxItems': 5},
     'soltech': {'type': 'array', 'items': {'type': 'integer'}},
     'gsr': {'type': 'array', 'items': {'type': 'integer'}},
     'projects': {'type': 'array', 'items': STRING, 'minItems': 4, 'maxItems': 4},
@@ -178,9 +178,10 @@ CV Header Standard:
 - NEVER include internship or student tags ("Intern", "Working Student", "Werkstudent", "Praktikant", "Student").
 - NEVER include degree titles ("M.Sc. Student", "Web and Data Science Student") in the header.
 - NEVER include seniority prefixes ("Senior", "Junior", "Lead", "Principal", "Associate", "Staff").
-Return 3-5 concise skill groups: each term must occur
-verbatim in candidate_profile (e.g. Python, SQL, PostgreSQL, Docker, Git, Airflow, PyTorch, Scikit-learn, LLMs, RAG).
-NEVER copy domain buzzwords or foreign terms from the job description into skills. Research interests must use a 'Research Interests' label, never count as proven skills.
+Return 3-4 concise, non-empty skill groups (e.g. 'Programming & Databases', 'Cloud & DevOps', 'Machine Learning & AI'):
+- Each group MUST contain 2 to 6 terms occurring verbatim in candidate_profile (e.g. Python, SQL, PostgreSQL, Docker, Git, Airflow, PyTorch, Scikit-learn, LLMs, RAG).
+- NEVER return an empty terms array ([]). Every skill group must contain at least 2 non-empty terms.
+- NEVER copy domain buzzwords or foreign terms from the job description into skills. Research interests must use a 'Research Interests' label, never count as proven skills.
 Write a 2-3 sentence opening naming the role once, then exactly 3 substantive evidence-led body paragraphs about its actual duties.
 Cover Letter Opening Paragraph Standards:
 - For Werkstudent, Working Student, Praktikant, and Intern positions: The opening paragraph MUST explicitly state your enrollment as a Master's student in Web and Data Science at the University of Koblenz (e.g. "I am applying for the [Role] position at [Company]. As a Master's student in Web and Data Science at the University of Koblenz, my background in...").
@@ -202,7 +203,7 @@ may appear only as learning interests or future approaches. Link strongest suppo
 praise and repeating achievements. Report eligibility/technology gaps honestly. Plain text only, no markdown or LaTeX.
 Follow responsibility_plan: address every primary duty in the letter with specific evidence or an honest prospective approach.
 Use the first four projects from project_order in that exact order. Choose relevant skills, not every skill in the profile.
-Omit research interests unless the posting explicitly requests those research topics. Never add computer vision research interests (e.g. 3D reconstruction, neural rendering, depth estimation) to skills unless explicitly required by the posting. Do not label proven skills such as Machine Learning as research interests; use the relevant technical skill group. Never add a generic skill group to fill space.
+Omit research interests unless the posting explicitly requests those research topics. Never add computer vision research interests (e.g. 3D reconstruction, neural rendering, depth estimation) to skills unless explicitly required by the posting. Do not label proven skills such as Machine Learning as research interests; use the relevant technical skill group. Never return an empty skill group with zero terms.
 The summary must connect background and strongest supported skills to concrete duties, not generic industry aspirations.
 If timing_source is present, briefly acknowledge employer timing in one paragraph while preserving fixed_closing availability.
 Use an explicit learning bridge for unconfirmed named tools. State gaps in metadata; never return "None" as a gap.
@@ -293,14 +294,48 @@ def validate(draft, evidence, profile, fixed):
     draft['projects'] = [resolve_project_key(p) for p in draft.get('projects', [])]
     if len(draft['projects']) != 4 or len(set(draft['projects'])) != 4 or any(p not in evidence['projects'] for p in draft['projects']):
         raise ValueError('Select four distinct supported projects.')
+    if isinstance(draft.get('skills'), list):
+        cleaned_skills = []
+        for group in draft['skills']:
+            if not isinstance(group, dict) or 'label' not in group:
+                continue
+            label = str(group.get('label', '')).strip()
+            raw_terms = group.get('terms', [])
+            if not isinstance(raw_terms, list):
+                continue
+            terms = [str(t).strip() for t in raw_terms if isinstance(t, str) and str(t).strip()]
+            if label and terms:
+                cleaned_skills.append({'label': label, 'terms': terms})
+        draft['skills'] = cleaned_skills
+
+        # If empty skill groups were pruned and left fewer than 3 groups, supplement with grounded profile groups:
+        if len(draft['skills']) < 3:
+            existing_terms = {t.casefold() for g in draft['skills'] for t in g['terms']}
+            candidate_groups = [
+                ('Data Engineering & Cloud', ['Docker', 'Git', 'CI/CD', 'AWS', 'GCP', 'ETL/ELT Pipelines']),
+                ('Programming & Databases', ['Python', 'SQL', 'PostgreSQL', 'MySQL', 'FastAPI']),
+                ('Machine Learning & AI', ['PyTorch', 'TensorFlow', 'Scikit-learn', 'LLMs', 'RAG']),
+            ]
+            for c_label, c_terms in candidate_groups:
+                grounded_terms = [t for t in c_terms if t.casefold() in profile.casefold() and t.casefold() not in existing_terms]
+                if len(grounded_terms) >= 3:
+                    draft['skills'].append({'label': c_label, 'terms': grounded_terms[:5]})
+                    existing_terms.update(t.casefold() for t in grounded_terms)
+                    if len(draft['skills']) >= 3:
+                        break
+
     if not isinstance(draft['skills'], list) or not 3 <= len(draft['skills']) <= 5:
         raise ValueError('Provide 3-5 skill groups.')
     for group in draft['skills']:
         if not isinstance(group, dict) or set(group) != {'label', 'terms'} or not isinstance(group['terms'], list) or not group['terms']:
-            raise ValueError('Invalid skill group.')
+            raise ValueError(f"Invalid skill group '{group.get('label', '')}': terms must be a non-empty list.")
         unsupported = [t for t in group['terms'] if not isinstance(t, str) or not t.strip() or t.casefold() not in profile.casefold()]
         if unsupported:
-            raise ValueError(f"Skill terms must be grounded in candidate_profile. The following terms are not in candidate_profile: {', '.join(unsupported[:5])}. Only use atomic terms that appear verbatim in candidate_profile.")
+            valid = [t for t in group['terms'] if isinstance(t, str) and t.strip() and t.casefold() in profile.casefold()]
+            if valid:
+                group['terms'] = valid
+            else:
+                raise ValueError(f"Skill terms must be grounded in candidate_profile. The following terms are not in candidate_profile: {', '.join(unsupported[:5])}. Only use atomic terms that appear verbatim in candidate_profile.")
     def strings(value):
         if isinstance(value, str): yield value
         elif isinstance(value, list):
