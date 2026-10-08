@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Job Search Radar — Opportunities & Match Engine</title>
+  <meta name="description" content="Interactive dashboard and matching engine for AI Job Search, displaying scraped jobs, algorithmic fit scores, and application tracking.">
+  <link rel="stylesheet" href="/web/styles.css?v=20260919_1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2222%22 font-size=%2220%22>🎯</text></svg>">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-group">
+        <div class="radar-icon">🎯</div>
+        <div class="logo-title">
+          <h1>AI Job Search Radar</h1>
+          <p>Scraper, Algorithmic Matching & Application Pipeline</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <div class="candidate-badge">
+          <div class="candidate-avatar">AI</div>
+          <div class="candidate-info">
+            <div class="candidate-name">AI Job Search</div>
+            <div class="candidate-sub">Automated Application Dashboard</div>
+          </div>
+        </div>
+        <button id="btn-header-generator" class="btn-accent" aria-label="Paste Job Description to Generate Documents">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Paste JD & Generate
+        </button>
+
+        <button id="btn-open-scrape" class="btn-primary" aria-label="Trigger New Scrape">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Scrape New Jobs
+        </button>
+      </div>
+    </header>
+
+    <!-- Metrics Stat Bar -->
+    <section class="stats-grid" id="stats-container" aria-label="Pipeline Metrics">
+      <div class="stat-card" style="--card-accent: #06b6d4;">
+        <div class="stat-label">Stored Opportunities</div>
+        <div class="stat-val" id="stat-total-jobs">--</div>
+        <div class="stat-desc" id="stat-jobs-desc">Visible postings follow the two-day filter; tracked applications remain visible.</div>
+      </div>
+      <div class="stat-card stat-card-clickable" id="stat-card-today" style="--card-accent: #f59e0b; cursor: pointer;" title="Click to view and filter recent jobs">
+        <div class="stat-label" id="stat-today-label">⚡ Posted Today</div>
+        <div class="stat-val" id="stat-today-jobs">--</div>
+        <div class="stat-desc" id="stat-today-desc">Freshly published opportunities ready to apply</div>
+      </div>
+      <div class="stat-card" style="--card-accent: #10b981;">
+        <div class="stat-label">Strong Matches (75%+)</div>
+        <div class="stat-val" id="stat-strong-fits">--</div>
+        <div class="stat-desc">Direct overlap with Databricks, Spark, RAG</div>
+      </div>
+      <div class="stat-card" style="--card-accent: #8b5cf6;">
+        <div class="stat-label">Applications Active / Drafted</div>
+        <div class="stat-val" id="stat-applied-count">--</div>
+        <div class="stat-desc" id="stat-applied-desc">Tracked in job_search_tracker.csv</div>
+      </div>
+      <div class="stat-card" style="--card-accent: #38bdf8;">
+        <div class="stat-label">Average Fit Rating</div>
+        <div class="stat-val" id="stat-avg-score">--<span>%</span></div>
+        <div class="stat-desc">Across all scanned roles in Germany</div>
+      </div>
+    </section>
+
+    <!-- View Navigation Tabs -->
+    <nav class="tabs-nav" aria-label="Dashboard Views">
+      <button class="tab-btn active" id="tab-jobs" data-view="jobs">
+        <span>Scraped Opportunities</span>
+        <span class="tab-badge" id="tab-badge-jobs">0</span>
+      </button>
+      <button class="tab-btn" id="tab-tracker" data-view="tracker">
+        <span>Application Pipeline</span>
+        <span class="tab-badge" id="tab-badge-tracker">0</span>
+      </button>
+      <button class="tab-btn tab-btn-studio" id="tab-generator" data-view="generator">
+        <span>✨ Paste JD & Generate</span>
+      </button>
+    </nav>
+
+    <!-- View: Jobs Explorer -->
+    <main id="view-jobs">
+      <!-- Search & Filters Panel -->
+      <section class="controls-panel" aria-label="Filters">
+        <div class="search-row">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="input-search" placeholder="Search by company, role title, or technology (e.g. Databricks, PySpark, Agentic)..." aria-label="Search jobs">
+          </div>
+          <select id="select-sort" class="sort-select" aria-label="Sort by">
+            <option value="score_desc">Match Score: Day Before First</option>
+            <option value="score_pure">Match Score: High to Low (All Dates)</option>
+            <option value="date_desc">Posted: Newest First</option>
+            <option value="date_asc">Posted: Oldest First</option>
+            <option value="company_asc">Company: A to Z</option>
+          </select>
+        </div>
+
+        <div class="filter-pills" id="date-pills">
+          <span class="filter-label">Date Posted:</span>
+          <button class="pill active" data-date="all">All Recent (≤ 2 Days)</button>
+          <button class="pill pill-today" data-date="today">
+            ⚡ Posted Today <span class="pill-count" id="count-jobs-today">0</span>
+          </button>
+          <button class="pill" data-date="yesterday">
+            Yesterday <span class="pill-count" id="count-jobs-yesterday">0</span>
+          </button>
+        </div>
+
+        <div class="filter-pills" id="status-pills">
+          <span class="filter-label">Status:</span>
+          <button class="pill active" data-status="all">All Postings</button>
+          <button class="pill" data-status="unapplied">○ Unapplied Only <span class="pill-count" id="count-jobs-unapplied">0</span></button>
+          <button class="pill" data-status="applied">● Drafted / Applied <span class="pill-count" id="count-jobs-applied">0</span></button>
+        </div>
+
+        <div class="filter-pills" id="portal-pills">
+          <span class="filter-label">Portal / Site:</span>
+          <button class="pill active" data-portal="all">All Sites <span class="pill-count" id="count-portal-all">0</span></button>
+          <button class="pill pill-portal-linkedin" data-portal="linkedin">LinkedIn <span class="pill-count" id="count-portal-linkedin">0</span></button>
+          <button class="pill pill-portal-stepstone" data-portal="stepstone">StepStone <span class="pill-count" id="count-portal-stepstone">0</span></button>
+          <button class="pill pill-portal-arbeitsagentur" data-portal="arbeitsagentur">Arbeitsagentur <span class="pill-count" id="count-portal-arbeitsagentur">0</span></button>
+          <button class="pill pill-portal-freehire" data-portal="freehire">FreeHire <span class="pill-count" id="count-portal-freehire">0</span></button>
+          <button class="pill pill-portal-xing" data-portal="xing">XING <span class="pill-count" id="count-portal-xing">0</span></button>
+        </div>
+
+        <div class="filter-pills" id="category-pills">
+          <span class="filter-label">Role Category:</span>
+          <button class="pill active" data-category="all">All Roles</button>
+          <button class="pill" data-category="Data Engineering">Data Engineering</button>
+          <button class="pill" data-category="AI / ML & GenAI">AI / ML & GenAI</button>
+          <button class="pill" data-category="Data Analytics & BI">Data Analytics & BI</button>
+          <button class="pill" data-category="Werkstudent & Intern">Werkstudent & Intern</button>
+        </div>
+
+        <div class="filter-pills" id="tier-pills">
+          <span class="filter-label">Match Tier:</span>
+          <button class="pill active" data-tier="all">All Tiers</button>
+          <button class="pill" data-tier="Strong Fit">Strong Fit (75%+)</button>
+          <button class="pill" data-tier="Good Fit">Good Fit (60%+)</button>
+        </div>
+      </section>
+
+      <!-- Jobs Grid -->
+      <section class="jobs-grid" id="jobs-grid" aria-label="Job Postings List">
+        <!-- Rendered dynamically by app.js -->
+      </section>
+    </main>
+
+    <!-- View: Application Pipeline Tracker -->
+    <section id="view-tracker" style="display: none;" aria-label="Application Tracker">
+      <div class="tracker-controls-panel">
+        <div class="tracker-filter-pills" id="tracker-status-pills">
+          <button class="pill active" data-tracker-filter="all">
+            All Applications <span class="pill-count" id="count-tracker-all">0</span>
+          </button>
+          <button class="pill" data-tracker-filter="applied">
+            ✓ Applied <span class="pill-count" id="count-tracker-applied">0</span>
+          </button>
+          <button class="pill" data-tracker-filter="not-applied">
+            ○ Not Applied / Drafted <span class="pill-count" id="count-tracker-drafted">0</span>
+          </button>
+        </div>
+        <div class="tracker-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="input-tracker-search" placeholder="Filter pipeline by company, role, or contact..." aria-label="Filter applications">
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <table class="tracker-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Company</th>
+              <th>Role</th>
+              <th>Application Status</th>
+              <th>Fit Score</th>
+              <th>Contact Person</th>
+              <th>Actions / Documents</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-table-body">
+            <!-- Rendered dynamically by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- View: Custom Job Description Generator Studio -->
+    <section id="view-generator" style="display: none;" aria-label="Custom Application Studio">
+      <div class="studio-header">
+        <div class="studio-header-title">
+          <h2>✨ Custom Application Studio</h2>
+          <p>Paste any job description from LinkedIn, StepStone, email, or company career portal. Antigravity will autonomously analyze requirements, extract tech stack, check ATS & German language compliance, dynamically tailor a 2-page ModernCV and 1-page XeLaTeX Cover Letter, compile the PDFs, and update your tracker.</p>
+        </div>
+        <div class="studio-header-toolbar">
+          <button type="button" id="btn-gen-paste-clipboard" class="btn-secondary" title="Paste text from clipboard">
+            📋 Paste Clipboard
+          </button>
+          <button type="button" id="btn-gen-sample-de" class="btn-secondary" title="Load sample Azure Data Engineer job description">
+            🧪 Sample: Data Engineer
+          </button>
+          <button type="button" id="btn-gen-sample-ai" class="btn-secondary" title="Load sample AI / ML Engineer job description">
+            🧪 Sample: AI / ML Engineer
+          </button>
+          <button type="button" id="btn-gen-clear" class="btn-secondary" title="Clear all fields">
+            🧹 Clear
+          </button>
+        </div>
+      </div>
+
+      <div class="studio-grid">
+        <!-- Left: Input Form -->
+        <div class="studio-card studio-form-card">
+          <div class="studio-card-header">
+            <h3>📝 Job Requisition Details</h3>
+            <span class="studio-badge-subtle">ATS ModernCV & XeLaTeX Engine</span>
+          </div>
+
+          <form id="form-custom-generator" onsubmit="return false;">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="custom-gen-company">Company Name <span class="required-star">*</span></label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🏢</span>
+                  <input type="text" id="custom-gen-company" placeholder="e.g. BMW Group, Celonis, Siemens" required autocomplete="off">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="custom-gen-title">Role Title <span class="required-star">*</span></label>
+                <div class="input-with-icon">
+                  <span class="input-icon">💼</span>
+                  <input type="text" id="custom-gen-title" placeholder="e.g. Senior Data Engineer (Azure/Databricks)" required autocomplete="off">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="custom-gen-location">Location / City <span class="optional-tag">(Optional)</span></label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📍</span>
+                  <input type="text" id="custom-gen-location" placeholder="e.g. Munich, Germany (auto-detected)">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="custom-gen-contact">Contact Person <span class="optional-tag">(Optional)</span></label>
+                <div class="input-with-icon">
+                  <span class="input-icon">👤</span>
+                  <input type="text" id="custom-gen-contact" placeholder="e.g. Julia Weber / Recruiting Team">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="custom-gen-url">Job Posting URL <span class="optional-tag">(Optional)</span></label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔗</span>
+                  <input type="url" id="custom-gen-url" placeholder="https://careers.company.com/job/123">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="label-with-actions">
+                <label for="custom-gen-desc">Job Description (Tasks, Requirements, Tech Stack) <span class="required-star">*</span></label>
+                <div class="label-counter-group">
+                  <span id="custom-gen-word-counter" class="text-counter">0 words · 0 chars</span>
+                  <button type="button" id="btn-gen-auto-detect" class="btn-link-action" title="Scan description to auto-fill company, title, location and contact">
+                    ⚡ Auto-Detect Fields
+                  </button>
+                </div>
+              </div>
+              <textarea id="custom-gen-desc" rows="12" placeholder="Paste full job description text here... (Responsibilities, requirements, tech stack, recruiter info)"></textarea>
+            </div>
+
+            <div id="custom-gen-error-banner" class="studio-alert-error" style="display:none;"></div>
+
+            <button type="button" id="btn-custom-generate-submit" class="btn-generate-hero">
+              <div class="btn-hero-glow"></div>
+              <div class="btn-hero-content">
+                <span class="btn-hero-icon">🚀</span>
+                <div class="btn-hero-text">
+                  <div class="btn-hero-title">Generate Tailored CV & Cover Letter</div>
+                  <div class="btn-hero-sub">Compiles 2-Page ModernCV + 1-Page XeLaTeX Cover Letter with ATS Verification</div>
+                </div>
+              </div>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Radar & Live Results -->
+        <div class="studio-card studio-preview-card">
+          <!-- Live Radar Panel (Default/Live) -->
+          <div id="studio-live-radar" class="studio-radar-panel">
+            <div class="studio-card-header">
+              <h3>🎯 Real-Time Requisition Radar</h3>
+              <span class="studio-badge-live">Live Fit Scanner</span>
+            </div>
+
+            <!-- Score & Classification Banner -->
+            <div class="radar-score-banner">
+              <div class="radar-gauge-group">
+                <div class="radar-gauge-val" id="radar-fit-score">--<span class="radar-gauge-pct">%</span></div>
+                <div class="radar-gauge-label">Algorithmic Fit</div>
+              </div>
+              <div class="radar-meta-group">
+                <div class="radar-badge-row">
+                  <span class="radar-category-pill" id="radar-category-badge">Role Category: Waiting for input</span>
+                </div>
+                <div class="radar-headline-box">
+                  <span class="radar-headline-label">Tailored CV Address Headline:</span>
+                  <span class="radar-headline-val" id="radar-headline-badge">Target Role Headline</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Compliance Gates Radar -->
+            <div class="radar-gates-section">
+              <div class="radar-gate-card" id="radar-gate-german">
+                <div class="radar-gate-icon">🇩🇪</div>
+                <div class="radar-gate-info">
+                  <div class="radar-gate-title">German Language Gate</div>
+                  <div class="radar-gate-desc" id="radar-german-status">German B2 / English C1 compatible (No German C1/C2 required)</div>
+                </div>
+              </div>
+
+              <div class="radar-gate-card" id="radar-gate-dg" style="display: none;">
+                <div class="radar-gate-icon">🎓</div>
+                <div class="radar-gate-info">
+                  <div class="radar-gate-title">Data Governance Seminar Triggered</div>
+                  <div class="radar-gate-desc">"Data Governance Quality Assurance" seminar will be featured in CV Education and Cover Letter!</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Extracted Keywords Radar -->
+            <div class="radar-keywords-section">
+              <div class="radar-keywords-header">
+                <span>Extracted Tech Stack & Keywords</span>
+                <span class="radar-kw-count" id="radar-kw-count">0 detected</span>
+              </div>
+              <div class="radar-keywords-list" id="radar-keywords-list">
+                <span class="radar-kw-placeholder">Paste a job description to see detected technologies (Azure, Databricks, PySpark, RAG, SQL, etc.)</span>
+              </div>
+            </div>
+
+            <!-- ATS Optimization Standards Badge -->
+            <div class="radar-ats-guarantee">
+              <div class="radar-ats-title">🛡️ Strict Application Standards Enforced:</div>
+              <ul class="radar-ats-list">
+                <li>CV: <strong>Exactly 2 Pages</strong> (LuaLaTeX, banking style, ragged-right summary & bullets)</li>
+                <li>Cover Letter: <strong>Exactly 1 Page</strong> (XeLaTeX, bold thematic paragraph lead-ins, 300–350 words)</li>
+                <li>Candidate Profile: <strong>Configured via Profile</strong> (English / German, work authorization)</li>
+                <li>Reverse Chronological Experience: <strong>Strict Chronological Order</strong></li>
+                <li>Zero Fabrication: Grounded in verified production metrics and project evidence</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Generation Progress Panel (While Compiling) -->
+          <div id="studio-progress-card" class="studio-progress-panel" style="display: none;">
+            <div class="progress-ring-container">
+              <div class="progress-spinner-ring"></div>
+              <div class="progress-ring-center">⚙️</div>
+            </div>
+            <h3 class="progress-heading">Generating Tailored Documents…</h3>
+            <p class="progress-sub" id="progress-status-text">Analyzing job posting requirements & candidate evidence…</p>
+
+            <div class="progress-steps-list">
+              <div class="progress-step active" id="pstep-1">
+                <span class="pstep-icon">🔍</span>
+                <span class="pstep-text">Extracting keywords & matching candidate achievements</span>
+              </div>
+              <div class="progress-step" id="pstep-2">
+                <span class="pstep-icon">✍️</span>
+                <span class="pstep-text">Writing tailored 4-line summary & ModernCV sections</span>
+              </div>
+              <div class="progress-step" id="pstep-3">
+                <span class="pstep-icon">📜</span>
+                <span class="pstep-text">Composing evidence-led XeLaTeX Cover Letter</span>
+              </div>
+              <div class="progress-step" id="pstep-4">
+                <span class="pstep-icon">⚙️</span>
+                <span class="pstep-text">Compiling via LuaLaTeX and XeLaTeX engines</span>
+              </div>
+              <div class="progress-step" id="pstep-5">
+                <span class="pstep-icon">🛡️</span>
+                <span class="pstep-text">Verifying 2-page CV & 1-page Letter ATS compliance</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generated Results & Interactive PDF Viewer Panel -->
+          <div id="studio-results-card" class="studio-results-panel" style="display: none;">
+            <div class="results-header-banner">
+              <div class="results-banner-left">
+                <span class="results-banner-icon">🎉</span>
+                <div>
+                  <h3 id="results-company-role">Documents Generated Successfully!</h3>
+                  <div class="results-badges-row">
+                    <span class="results-badge" id="badge-cv-pages">CV: 2 Pages ✓</span>
+                    <span class="results-badge" id="badge-cl-pages">Letter: 1 Page ✓</span>
+                    <span class="results-badge badge-ats">ATS Verified ✓</span>
+                    <span class="results-badge badge-tracker">Tracked in Pipeline ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Document Actions -->
+            <div class="results-actions-bar">
+              <button type="button" id="btn-preview-cv" class="btn-primary btn-sm">👁️ Preview CV</button>
+              <a id="btn-download-cv" class="btn-secondary btn-sm" download>⬇️ Download CV PDF</a>
+              <button type="button" id="btn-preview-cl" class="btn-primary btn-sm">👁️ Preview Letter</button>
+              <a id="btn-download-cl" class="btn-secondary btn-sm" download>⬇️ Download Letter PDF</a>
+              <button type="button" id="btn-view-in-tracker" class="btn-secondary btn-sm">📊 Open Tracker</button>
+            </div>
+
+            <!-- PDF Viewer Tabs & Frame -->
+            <div class="results-pdf-box">
+              <div class="pdf-viewer-tab-bar">
+                <button type="button" id="btn-tab-pdf-cv" class="pdf-tab active">
+                  📄 ModernCV (2 Pages)
+                </button>
+                <button type="button" id="btn-tab-pdf-cl" class="pdf-tab">
+                  📄 Cover Letter (1 Page)
+                </button>
+              </div>
+              <div class="pdf-viewer-container">
+                <iframe id="studio-pdf-frame" class="studio-pdf-iframe" title="Document Preview Frame"></iframe>
+              </div>
+            </div>
+
+            <!-- Generation Summary & Review Box -->
+            <div class="results-summary-box">
+              <div class="summary-box-title">📋 Tailoring & Verification Summary</div>
+              <div class="summary-grid">
+                <div>
+                  <span class="summary-label">Company & Role:</span>
+                  <span class="summary-val" id="summary-company-role">--</span>
+                </div>
+                <div>
+                  <span class="summary-label">Contact Person:</span>
+                  <span class="summary-val" id="summary-contact">--</span>
+                </div>
+                <div>
+                  <span class="summary-label">Archived Location:</span>
+                  <code class="summary-code" id="summary-archive-dir">--</code>
+                </div>
+                <div>
+                  <span class="summary-label">Matched Keywords:</span>
+                  <span class="summary-val" id="summary-matched-kw">--</span>
+                </div>
+              </div>
+              <div id="summary-warnings-box" style="display:none; margin-top: 10px;" class="summary-warning"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PDF Preview Modal -->
+    <dialog id="pdf-modal" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h3 id="modal-title">Document Preview</h3>
+        <button id="btn-close-pdf" class="btn-close" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="pdf-frame" class="pdf-viewer-frame" title="PDF Document Viewer"></iframe>
+      </div>
+    </dialog>
+
+    <!-- Scrape Trigger Modal -->
+    <dialog id="scrape-modal" aria-labelledby="scrape-title">
+      <div class="modal-header">
+        <h3 id="scrape-title">Trigger Live Scrape</h3>
+        <button id="btn-close-scrape" class="btn-close" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="scrape-defaults" style="color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">Every run searches data engineering, analytics, data science, AI/ML, KI, data management and business intelligence, including related English/German titles and student roles. Add an optional query below to broaden the search.</p>
+        <form id="form-scrape" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label for="scrape-query" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-muted);">Additional Search Query (optional)</label>
+            <input type="text" id="scrape-query" placeholder="e.g. Azure Data Engineer" aria-describedby="scrape-defaults" style="width: 100%; background: #1e293b; border: 1px solid var(--border-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-family: inherit;">
+          </div>
+          <div>
+            <label for="scrape-location" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-muted);">Location</label>
+            <input type="text" id="scrape-location" value="Germany" style="width: 100%; background: #1e293b; border: 1px solid var(--border-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-family: inherit;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted);">Target Portals / Sites to Scrape</label>
+            <div class="scrape-portal-options" id="scrape-portal-checkboxes">
+              <label class="checkbox-pill"><input type="checkbox" name="scrape-portals" value="linkedin" checked> <span>LinkedIn</span></label>
+              <label class="checkbox-pill"><input type="checkbox" name="scrape-portals" value="stepstone" checked> <span>StepStone</span></label>
+              <label class="checkbox-pill"><input type="checkbox" name="scrape-portals" value="arbeitsagentur" checked> <span>Arbeitsagentur</span></label>
+              <label class="checkbox-pill"><input type="checkbox" name="scrape-portals" value="freehire" checked> <span>FreeHire</span></label>
+              <label class="checkbox-pill"><input type="checkbox" name="scrape-portals" value="xing" checked> <span>XING</span></label>
+            </div>
+            <div class="scrape-portal-actions">
+              <button type="button" id="btn-select-all-portals" class="btn-link-sm">Select All</button>
+              <span style="color: var(--text-dim); font-size: 12px;">·</span>
+              <button type="button" id="btn-clear-portals" class="btn-link-sm">Clear All</button>
+            </div>
+          </div>
+          <div>
+            <label for="scrape-limit" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-muted);">Max Results per Portal per Search Term</label>
+            <select id="scrape-limit" style="width: 100%; background: #1e293b; border: 1px solid var(--border-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-family: inherit;">
+              <option value="5">5 results</option>
+              <option value="10" selected>10 results</option>
+              <option value="20">20 results</option>
+            </select>
+          </div>
+          <div>
+            <label for="scrape-jobage" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-muted);">Posting Recency</label>
+            <select id="scrape-jobage" style="width: 100%; background: #1e293b; border: 1px solid var(--border-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-family: inherit;">
+              <option value="1">Posted in last 24 hours (1 day)</option>
+              <option value="2" selected>Max 2 days or newer (default)</option>
+              <option value="7">Posted in last 7 days</option>
+            </select>
+          </div>
+          <button type="submit" id="btn-submit-scrape" class="btn-primary" style="margin-top: 10px; justify-content: center;">
+            Start Scraper Run
+          </button>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Toast Notification System -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <script src="/web/app.js?v=20260919_1"></script>
+</body>
+</html>

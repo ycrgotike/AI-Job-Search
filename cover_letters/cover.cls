@@ -76,6 +76,10 @@ Last Updated on \today
 \newcommand{\location}[1]{
 \color{headings}\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{10pt}{12pt}\selectfont {#1\\} \normalfont}
 
+% Prevent awkward automatic word breaks across lines while preserving legitimate compound-word hyphens
+\hyphenpenalty=10000
+\exhyphenpenalty=50
+
 % Bullet Lists with fewer gaps command
 \newenvironment{tightemize}{
 \vspace{-\topsep}\begin{itemize}\itemsep1pt \parskip0pt \parsep0pt}
@@ -84,13 +88,13 @@ Last Updated on \today
 % Cover Letter
 \newcommand{\companyname}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/lato/]{Lato-Bol}\fontsize{12pt}{14pt}\selectfont {#1 \\} \normalfont}
 
-\newcommand{\companyaddress}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\}\mbox{}\\\mbox{}\\ \normalfont}
+\newcommand{\companyaddress}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\} \normalfont\vspace{3pt}}
 
-\newcommand{\currentdate}[1]{\raggedleft\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\} \normalfont}
+\newcommand{\currentdate}[1]{{\raggedleft\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont #1\par}\vspace{4pt}}
 
-% Letter content command
-\newcommand{\lettercontent}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\}\mbox{}\\ \normalfont}
+% Letter content command (fully justified paragraphs with clean paragraph spacing)
+\newcommand{\lettercontent}[1]{{\leftskip=0pt \rightskip=0pt \parfillskip=0pt plus 1fil \parindent=0pt\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{10.5pt}{13.5pt}\selectfont #1\par}\vspace{6pt}}
 
-\newcommand{\closing}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\}\mbox{}\\\mbox{}\\ \normalfont}
+\newcommand{\closing}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\}\vspace{12pt} \normalfont}
 
 \newcommand{\signature}[1]{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont {#1 \\} \normalfont}

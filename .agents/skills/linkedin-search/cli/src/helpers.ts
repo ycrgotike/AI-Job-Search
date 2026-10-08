@@ -64,6 +64,10 @@ export interface JobDetail extends JobCard {
   jobFunction: string | null
   industries: string | null
   isActive: boolean
+  postedTimeAgo?: string | null
+  isFresh?: boolean
+  repostDetected?: boolean
+  easyApply?: boolean
 }
 
 /**
@@ -243,6 +247,55 @@ export function parseJobDetail(html: string, id: string): JobDetail {
   const topcard = descStart === -1 ? html : html.slice(0, descStart)
   const isActive = !/closed-job__flavor|no longer accepting applications/i.test(topcard)
 
+  // Extract posted time ago (e.g. "Vor 2 Wochen", "2 weeks ago", "14 hours ago")
+  const timeAgoMatch = html.match(
+    /class="(?:posted-time-ago__text|topcard__flavor--metadata)[^"]*"[^>]*>([\s\S]*?)<\/span>/i,
+  )
+  const postedTimeAgo = timeAgoMatch ? clean(timeAgoMatch[1]) || null : null
+
+  let isFresh = true
+  let repostDetected = false
+
+  if (postedTimeAgo) {
+    const lower = postedTimeAgo.toLowerCase()
+    if (
+      lower.includes("woche") ||
+      lower.includes("week") ||
+      lower.includes("monat") ||
+      lower.includes("month") ||
+      lower.includes("jahr") ||
+      lower.includes("year") ||
+      lower.includes("repost") ||
+      lower.includes("erneut") ||
+      /\bvor\s+(?:[3-9]|\d{2,})\s+tag/i.test(lower) ||
+      /\b(?:[3-9]|\d{2,})\s+days?\s+ago/i.test(lower)
+    ) {
+      isFresh = false
+      repostDetected = true
+    } else if (
+      lower.includes("hour") ||
+      lower.includes("stunde") ||
+      lower.includes("minute") ||
+      lower.includes("just now") ||
+      lower.includes("heute") ||
+      lower.includes("gestern") ||
+      /\b1\s+day\s+ago/i.test(lower) ||
+      /\b2\s+days?\s+ago/i.test(lower) ||
+      /\bvor\s+1\s+tag/i.test(lower) ||
+      /\bvor\s+2\s+tag/i.test(lower)
+    ) {
+      isFresh = true
+      repostDetected = false
+    }
+  }
+
+  // Easy Apply vs Offsite Apply detection:
+  // LinkedIn guest pages use `apply-link-onsite` and `guest-to-member-job-apply` for Easy Apply,
+  // whereas direct employer links use `apply-link-offsite` / `offsite-apply`.
+  const easyApply =
+    /apply-link-onsite|guest-to-member-job-apply/i.test(html) ||
+    (!/apply-link-offsite|offsite-apply/i.test(html) && /easy\s*apply|einfach\s*bewerben/i.test(html))
+
   return {
     id,
     title: title ? clean(title) : "(untitled)",
@@ -257,6 +310,10 @@ export function parseJobDetail(html: string, id: string): JobDetail {
     jobFunction: criteria["job function"] ?? null,
     industries: criteria["industries"] ?? null,
     isActive,
+    postedTimeAgo,
+    isFresh,
+    repostDetected,
+    easyApply,
   }
 }
 

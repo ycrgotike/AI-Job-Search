@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""CLI helper for apply in ai-job-search workspace."""
+
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+
+from tools.rank_state import tracker_pairs, norm
+
+SEEN_JOBS_FILE = ROOT / "job_scraper" / "seen_jobs.json"
+TRACKER_FILE = ROOT / "job_search_tracker.csv"
+
+
+import csv
+import re
+
+def clean_title(t):
+    if not t:
+        return ""
+    s = t.strip()
+    s = re.sub(
+        r"[\(\[\{]\s*(?:all\s+genders?(?:\s+welcome)?|alle\s+geschlechter(?:\s+willkommen)?|"
+        r"m/w/d(?:\*|/x)?|w/m/d(?:\*|/x)?|f/m/d(?:\*|/x)?|m/f/d(?:\*|/x)?|d/f/m(?:\*|/x)?|"
+        r"m/f/d/x|w/m/x|m/f/x|m/w/x|m/w/div(?:\.|ers)?|m\|w\|d|w\|m\|d|d\|m\|w|"
+        r"m\s*,\s*w\s*,\s*d|m\s*/\s*w\s*/\s*d|w\s*/\s*m\s*/\s*d|"
+        r"mwd|gn|g\.n\.|mensch\*?)\s*[\)\]\}]",
+        "",
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(
+        r"[\s,\-\|/]+\s*(?:all\s+genders?(?:\s+welcome)?|alle\s+geschlechter(?:\s+willkommen)?|"
+        r"m/w/d(?:\*|/x)?|w/m/d(?:\*|/x)?|f/m/d(?:\*|/x)?|m/f/d(?:\*|/x)?|d/f/m(?:\*|/x)?|"
+        r"m/f/d/x|w/m/x|m/f/x|m/w/x|m/w/div(?:\.|ers)?|m\|w\|d|w\|m\|d|d\|m\|w|"
+        r"mwd|gn|g\.n\.|mensch\*?)(?=[\s,\-\|/]|$)",
+        "",
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(
+        r"\b(?:all\s+genders?(?:\s+welcome)?|alle\s+geschlechter(?:\s+willkommen)?)\b",
+        "",
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"[\s,\-\|/]+$", "", s)
+    s = re.sub(r"^[\s,\-\|/]+", "", s)
+    return s.strip()
+
+def get_job_id(url):
+    m = re.search(r"(\d{6,})", url or "")
+    return m.group(1) if m else None
+
+def get_applied_info(path):
+    pairs = set()
+    urls = set()
+    job_ids = set()
+    if not path.is_file():
+        return pairs, urls, job_ids
+    with path.open(encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            c = norm(r.get("company"))
+            t = norm(clean_title(r.get("role", "")))
+            if c:
+                pairs.add((c, t))
+            u = r.get("source", "").strip()
+            if u:
+                urls.add(u)
+                jid = get_job_id(u)
+                if jid:
+                    job_ids.add(jid)
+    return pairs, urls, job_ids
+
+def main():
+    if not SEEN_JOBS_FILE.is_file():
+        print("No seen jobs found. Run ./scrape first!")
+        return
+
+    try:
+        data = json.loads(SEEN_JOBS_FILE.read_text(encoding="utf-8"))
+        seen = data.get("seen", data)
+    except Exception as e:
+        print(f"Error loading {SEEN_JOBS_FILE}: {e}")
+        return
+
+    applied_pairs, applied_urls, applied_ids = get_applied_info(TRACKER_FILE)
+
+    available = []
+    for key, job in seen.items():
+        comp = job.get("company", "")
+        title = job.get("title", "")
+        url = job.get("url", "")
+        pair = (norm(comp), norm(clean_title(title)))
+        jid = get_job_id(url)
+        if pair in applied_pairs or url in applied_urls or (jid and jid in applied_ids):
+            continue
+        available.append(job)
+
+    if len(sys.argv) > 1:
+        target = sys.argv[1].lower()
+        matched = [j for j in available if target in j.get("company", "").lower() or target in j.get("title", "").lower() or target in j.get("url", "").lower()]
+        if matched:
+            print(f"🎯 Found match for '{sys.argv[1]}':")
+            for j in matched:
+                print(f"  • {j.get('company')} — {j.get('title')}")
+                print(f"    URL: {j.get('url')}")
+            print("\n👉 To generate the tailored CV & Cover Letter for this role, type in Antigravity chat:")
+            print(f"   'Apply to {matched[0].get('company')}'")
+            return
+        else:
+            print(f"No unapplied match found for '{sys.argv[1]}'.")
+
+    print("=" * 60)
+    print("📋 UNAPPLIED SHORTLISTED JOBS READY FOR APPLICATION:")
+    print("=" * 60)
+    for i, j in enumerate(available[:15], 1):
+        print(f"[{i}] {j.get('company')} — {j.get('title')}")
+        print(f"    Link: {j.get('url')}")
+
+    print("\n" + "=" * 60)
+    print("💡 HOW TO APPLY IN ANTIGRAVITY:")
+    print("Because /apply tailors your CV, writes an English cover letter,")
+    print("compiles LaTeX, and verifies PDF ATS formatting, it runs via AI chat.")
+    print("")
+    print("Simply type in the Antigravity chat prompt:")
+    print("   Apply to <Company Name> (e.g. 'Apply to Würth IT')")
+    print("   OR: Apply to <Job URL>")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
