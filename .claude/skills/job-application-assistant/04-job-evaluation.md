@@ -1,5 +1,5 @@
 ---
-framework_version: 1.2.6
+framework_version: 1.2.7
 ---
 
 # Job Evaluation Framework
@@ -39,12 +39,13 @@ Read the posting's language requirements as stated for **the role itself** — n
 | Posting requirement vs. your Languages table | Verdict |
 |---|---|
 | Requires a language **not on your table at all** (e.g. "fluent Polish required," "must communicate with the Warsaw team in Russian," and you list no Polish/Russian row) | **FAIL — hard stop.** Do not score, do not draft. Quote the exact requirement line. |
-| Requires a language you **do** list, but the posting's stated bar (as written — "fluent," "native," "C1+," "business-level") reads as plausibly **higher** than your declared level | **FLAG, then proceed.** Not a fail. Score and draft normally, but surface the gap explicitly in your report to the user (quote both the posting's requirement and your declared level) so they can judge it themselves — bars like "fluent" vary a lot by company and geography, and a recruiter may be flexible. Never silently drop the posting and never silently treat it as a clean pass. |
-| Requires a language you list, at or below your declared level (or the posting doesn't specify a level at all — just names the language) | **PASS.** No note needed. |
+| Requires **minimum German C1, C2, verhandlungssicher, business-fluent German, or native German** | **FAIL — hard stop.** Yashwanth Gotike holds German B2 (Intermediate). The candidate has strictly ruled out roles demanding C1+ German. Never scrape, rank, or draft these roles. |
+| Requires a language you **do** list (other than the strict German C1 rule), but the posting's stated bar (as written — "fluent," "native," "business-level") reads as plausibly **higher** than your declared level | **FLAG, then proceed.** Not a fail. Score and draft normally, but surface the gap explicitly in your report to the user (quote both the posting's requirement and your declared level) so they can judge it themselves. |
+| Requires a language you list, at or below your declared level (e.g. English C1, German B2/B1/conversational, or unspecified) | **PASS.** No note needed. |
 
 Judge the level comparison the same way you judge everything else in this framework: read both sides as written and reason about it, don't force either into a rigid scale — CEFR letters, LinkedIn-style buckets ("professional working proficiency"), and plain-English words ("conversational," "fluent," "native") all appear in the wild and don't map onto each other precisely. When genuinely unsure whether a stated bar exceeds the candidate's level, prefer FLAG over a silent PASS — the human is meant to be the tiebreaker, not the gate.
 
-**Worked example:** a candidate whose Languages table lists Spanish (Native) and English (B1/B2). A posting requiring "fluent Russian" → **FAIL**, Russian isn't declared at all. A posting requiring "fluent English" → **FLAG**, English is declared but "fluent" plausibly exceeds B1/B2 — score and draft the application, but tell the candidate this posting's bar may be a stretch and let them decide. A posting requiring "conversational English" or unspecified English → **PASS**, B1/B2 clears a "conversational" bar cleanly.
+**Candidate profile application:** Yashwanth Gotike lists English (C1 / Fluent) and German (B2 / Intermediate). A posting requiring "fluent Russian" → **FAIL** (undeclared). A posting requiring "German C1 / verhandlungssicher" → **FAIL — hard stop** (exceeds German B2 and strictly barred). A posting requiring "fluent English" or "German B2" → **PASS**.
 
 ## Scoring Dimensions
 
@@ -60,9 +61,9 @@ How well do the required/preferred skills align with the candidate's capabilitie
 | 40-59 | Partial match, significant upskilling needed |
 | 0-39 | Fundamental mismatch |
 
-**Strong match areas:** [YOUR_PRIMARY_SKILLS]
-**Moderate match areas:** [YOUR_SECONDARY_SKILLS]
-**Weak match areas:** [SKILLS_YOU_LACK]
+**Strong match areas:** Python, SQL, ETL/ELT Pipelines, Azure Data Factory, Databricks, Apache Spark, Airflow, Power BI, DAX, Star Schema, Dimensional Modeling, RAG, LLMs, Vector Databases, AWS, Azure, GCP, CI/CD, Git
+**Moderate match areas:** Scikit-learn, TensorFlow, PyTorch, MLflow, DVC, Tableau, Scala, R, Flask, FastAPI, Docker
+**Weak match areas:** C++, Embedded C, Frontend UI (React, Vue, Angular), Hardware/Firmware, Mainframe legacy systems
 
 ### 2. Experience Match (0-100)
 Does work history align with what they're looking for? Match on the function and nature of the work performed, not the literal job title - a "Data Consultant" and a "Data Scientist" role can be functionally identical.
@@ -74,9 +75,9 @@ Does work history align with what they're looking for? Match on the function and
 | 40-59 | Adjacent experience, would need to make the case |
 | 0-39 | Unrelated experience |
 
-**Strong:** [YOUR_DIRECT_EXPERIENCE_DOMAINS]
-**Moderate:** [YOUR_ADJACENT_EXPERIENCE]
-**Entry-level:** [ROLES_WITH_LIMITED_EXPERIENCE]
+**Strong:** Data Engineering (Azure Data Factory, Databricks, Spark, SQL ETL/ELT, cloud storage migration), Data Analysis & BI (EDA on 3M+ records, A/B testing, cohort analysis, Power BI DAX dashboards, automated Python analytics)
+**Moderate:** AI/ML Engineering & GenAI Applications (RAG pipelines, vector databases, MLOps, deep learning transfer learning, algorithmic trading time-series pipelines)
+**Entry-level:** Hardware engineering, legal/compliance, traditional sales
 
 ### 3. Behavioral/Culture Fit (0-100)
 Does the role and company culture match the behavioral profile?
@@ -91,10 +92,11 @@ Does the role and company culture match the behavioral profile?
 **Red flags to research:** Department disorganization, work dominated by maintenance over development, poor chemistry with leadership, culture mismatches. Check reviews, media coverage, LinkedIn connections, and network contacts for insider perspective.
 
 ### 4. Location & Logistics (Pass/Fail + Notes)
-- Within commute range: PASS
-- Remote with occasional office: PASS
-- Requires relocation: FAIL (deal-breaker)
-- Frequent international travel: FLAG (discuss with user)
+- Location in Germany (Koblenz or commutable cities): PASS
+- Germany-wide with relocation or hybrid/remote: PASS (candidate is actively willing to relocate across Germany and has 2 years remote/hybrid experience)
+- Remote within Germany/EU: PASS
+- Outside Germany without remote option: FAIL (deal-breaker)
+- Date of joining: Available 1 month from date of application
 
 ### 5. Career Alignment & Motivation (0-100)
 Does this role advance career goals and contain tasks that energize?
@@ -107,19 +109,19 @@ Does this role advance career goals and contain tasks that energize?
 | 0-39 | Dead end or backwards step |
 
 **Career goals:**
-- [YOUR_CAREER_GOAL_1]
-- [YOUR_CAREER_GOAL_2]
-- [YOUR_CAREER_GOAL_3]
+- Secure roles as Data Engineer, Data Analyst, Data Scientist, AI Engineer, ML Engineer, Business Intelligence Analyst, or Business Analyst across Germany.
+- Build production-grade data pipelines, modern lakehouses, scalable warehouses, and intelligent GenAI/Agentic LLM solutions that deliver high business ROI.
+- Capitalize on 5+ years of industry experience across Junior, Mid, and Senior-level positions while completing M.Sc. in Web & Data Science.
 
 **Motivation filter:** Evaluate not just whether you *can* do the tasks, but whether the tasks will *energize* you. Consider:
-- Tasks that energize: [YOUR_ENERGIZING_TASKS]
-- Tasks that drain: [YOUR_DRAINING_TASKS]
-- Non-task factors: leadership style, department culture, company values, degree of autonomy
+- Tasks that energize: Designing scalable ETL/ELT pipelines, building RAG and agentic workflows, optimizing complex SQL queries, creating automated BI reporting, discovering actionable patterns in large datasets.
+- Tasks that drain: Repetitive manual spreadsheet entry without automation, purely administrative coordination without technical modeling, legacy bureaucracy blocking CI/CD.
+- Non-task factors: Modern tech stack, outcome-driven engineering culture, openness to automation and GenAI.
 
 **Life situation alignment:** Consider personal constraints:
-- **Security**: [YOUR_FINANCIAL_SITUATION_CONTEXT]
-- **Flexibility**: [YOUR_SCHEDULE_CONSTRAINTS]
-- **Professional development**: [YOUR_GROWTH_PRIORITIES]
+- **Work Authorization**: Authorized in Germany; visa sponsorship not required.
+- **Flexibility**: Open to full-time (1-month notice) or part-time / werkstudent / praktikum (expected graduation 30/09/2027).
+- **Professional development**: Keen to leverage latest AI/LLM, data warehousing, and modern engineering practices.
 
 ### 6. Salary Benchmark (Optional)
 
@@ -245,6 +247,14 @@ consumer benefits.
 - **Moderate Fit** (45-59): Consider carefully, discuss with user
 - **Weak Fit** (30-44): Probably skip unless strategic reasons
 - **Poor Fit** (<30): Skip
+
+## Requirement Extraction & Evidence Grounding Standards
+When evaluating a role and preparing tailoring notes:
+1. **Identify Core Operational Responsibilities:** Extract the employer's actual day-to-day responsibilities and engineering challenges from the posting — not merely isolated technology keywords.
+2. **Connect to Concrete Evidence:** Map each core responsibility to verified evidence in the candidate's history (SolTech InfoLabs, G.S.R Educational Institutions, ITC Infotech, or named technical projects such as MVP UPSC or Algo Trading Platform).
+3. **Natural Terminology:** Adopt the posting's specific technical terms naturally where accurate. Strictly avoid keyword stuffing, buzzwords, and artificial technology dumps.
+4. **Factual Integrity & Zero Fabrication:** Preserve confirmed skills and implementations. Never invent metrics, responsibilities, or qualifications. If a requirement is a genuine gap, address it honestly rather than fabricating evidence.
+5. **Student & Academic Logistics:** For student/intern roles (Werkstudent / Praktikum), verify eligibility against confirmed university enrollment, expected graduation (09/2027), weekly hours (up to 20h/week during semester), and confirmed start date without inventing unconfirmed details.
 
 ## Pre-Application: Call the Employer (Best Practice)
 

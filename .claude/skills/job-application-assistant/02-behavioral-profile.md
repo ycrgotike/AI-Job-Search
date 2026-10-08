@@ -1,54 +1,49 @@
 ---
-framework_version: 1.0.0
+framework_version: 1.0.1
 ---
 
 # Behavioral Profile
 
-<!-- SETUP: This file is populated by running /setup -->
-<!-- You can use results from PI, DISC, Myers-Briggs, StrengthsFinder, or a self-assessment -->
-
 ## Overview
-[YOUR_NAME]'s behavioral assessment identifies them as a **[PROFILE_TYPE]** pattern. [1-2 SENTENCE_SUMMARY].
+Yashwanth Gotike's profile reflects an **Analytical-Builder & Pragmatic Specialist** pattern. He combines deep technical curiosity in engineering and modern AI systems with a disciplined focus on measurable business efficiency and performance optimization.
 
 ## Core Behavioral Drives
 
 | Drive | Level | Meaning |
 |-------|-------|---------|
-| [DRIVE_1] | [LEVEL] | [DESCRIPTION] |
-| [DRIVE_2] | [LEVEL] | [DESCRIPTION] |
-| [DRIVE_3] | [LEVEL] | [DESCRIPTION] |
-| [DRIVE_4] | [LEVEL] | [DESCRIPTION] |
+| Analytical Rigor | High | Driven to understand underlying data patterns, system bottlenecks, and root causes before building. |
+| Execution & Delivery | High | Focused on tangible metrics (e.g., latency reduction, cost reduction, pipeline reliability). |
+| Adaptability | High | Fast learner across emerging tools (migrating smoothly across AWS, Azure, GCP, Databricks, and GenAI/LLMs). |
+| Collaboration | Moderate-High | Communicates clearly across technical teams and business stakeholders; thrives in hybrid/remote environments. |
 
 ## Strongest Behaviors
-- **[BEHAVIOR_1]:** [DESCRIPTION]
-- **[BEHAVIOR_2]:** [DESCRIPTION]
-- **[BEHAVIOR_3]:** [DESCRIPTION]
+- **Problem Decomposition:** Breaks complex data engineering bottlenecks or ambiguous analytics requests into modular, testable components.
+- **Metric-Driven Accountability:** Consistently evaluates technical work by the concrete value it yields (e.g., query speeds, dollar cost savings, retention improvements).
+- **Proactive Continuous Learning:** Proactively expands into state-of-the-art areas (e.g., RAG pipelines, MLOps, algorithmic trading systems).
 
 ## How You Work Best
-- [ENVIRONMENT_PREFERENCE_1]
-- [ENVIRONMENT_PREFERENCE_2]
-- [ENVIRONMENT_PREFERENCE_3]
+- Environments with clear technical goals and autonomy to design scalable architectures.
+- Collaborative, cross-functional teams bridging data engineering, business analytics, and product/AI teams.
+- Modern engineering cultures that value automated testing, CI/CD, documentation, and clean code.
 
 ## Growth Areas (frame positively in applications)
-- **[AREA_1]:** [HOW_TO_FRAME_IT_POSITIVELY]
-- **[AREA_2]:** [HOW_TO_FRAME_IT_POSITIVELY]
+- **Perfectionism in Data Modeling:** Naturally seeks complete architectural elegance; frames this as prioritizing high data quality and robust schemas early to eliminate technical debt downstream.
+- **Broad Domain Scope:** Hands-on across engineering, analytics, and AI; frames this as full-lifecycle versatility from raw ingestion to model deployment and executive dashboards.
 
 ## Mapping to Job Posting Language
 
 When a job posting mentions these keywords, it's a **strong behavioral fit**:
-- [KEYWORD_OR_PHRASE_THAT_MATCHES_YOUR_STYLE]
-- [ANOTHER_KEYWORD]
+- "Data-driven decision making", "scalable pipelines", "end-to-end ownership", "continuous integration", "cross-functional collaboration", "proactive problem solver", "fast-paced", "hands-on".
 
 When a job posting mentions these, flag as **potential friction** (not deal-breaker):
-- [KEYWORD_OR_PHRASE_THAT_MIGHT_CLASH]
-- [ANOTHER_KEYWORD]
+- "Strictly manual reporting", "siloed routine maintenance without automation", "inflexible legacy waterfall without CI/CD".
 
 ## Management Style Preferences
-- [WHAT_MANAGEMENT_STYLE_WORKS_FOR_YOU]
-- [WHAT_DOESN'T_WORK]
+- **Works best:** Clear outcome-oriented leadership, transparent feedback, trust in technical decisions, and open discussion on architectural trade-offs.
+- **Doesn't work:** Micromanagement of routine tasks, absence of automated development practices, or resistance to modern data tooling.
 
 ## Using This in Applications
-- **Cover letters:** [HOW_TO_WEAVE_IN_BEHAVIORAL_STRENGTHS]
-- **CV:** [WHAT_TO_EMPHASIZE]
-- **Interviews:** [WHAT_STAR_EXAMPLES_TO_USE]
-- **Don't overstate:** [WHAT_NOT_TO_CLAIM]
+- **Cover letters:** Highlight ownership of end-to-end pipelines, collaboration with business stakeholders, and proven track record of reducing latency and cloud costs.
+- **CV:** Quantify achievements with metrics (e.g., 3M+ records, 40% dashboard time reduction, 30% cost savings).
+- **Interviews:** Use STAR examples detailing technical choices made, business constraints navigated, and cross-functional wins achieved.
+

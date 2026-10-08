@@ -1,5 +1,5 @@
 ---
-framework_version: 1.4.3
+framework_version: 1.5.8
 ---
 
 # CV Templates and Tailoring Guide
@@ -10,17 +10,17 @@ framework_version: 1.4.3
 
 All CVs use the moderncv LaTeX package with the "banking" style and "blue" color scheme.
 
-**Output file:** `cv/main_<company>_<role>.tex`
+**Output file:** `cv/YashwanthGotike_<CompanyName>_CV.tex` (compiled to `cv/YashwanthGotike_<CompanyName>_CV.pdf`)
 **Compile with:** **lualatex** on MiKTeX/TeX Live. pdflatex often fails on modern MiKTeX installs with `fontawesome5` font-expansion errors; lualatex handles the same sources cleanly.
 **Master reference:** `cv/main_example.tex` (comprehensive CV with all competencies, experience, and achievements - use as source when building targeted CVs)
 
 ### Compile command
 
 ```bash
-cd cv && lualatex -interaction=nonstopmode main_<company>_<role>.tex
+cd cv && lualatex -interaction=nonstopmode YashwanthGotike_<CompanyName>_CV.tex
 ```
 
-Expected output: `Output written on main_<company>_<role>.pdf (2 pages, ...)`. Any page count other than 2 is a failure that must be fixed before presenting to the user.
+Expected output: `Output written on YashwanthGotike_<CompanyName>_CV.pdf (2 pages, ...)`. Any page count other than 2 is a failure that must be fixed before presenting to the user.
 
 ## Document Structure
 
@@ -52,34 +52,48 @@ Expected output: `Output written on main_<company>_<role>.pdf (2 pages, ...)`. A
     linkcolor=blue,
     filecolor=magenta,
     urlcolor=blue,
-    pdftitle={[YOUR_NAME] - CV},
-    % Keep pdfpagemode=UseNone: this block runs after moderncv's own
-    % \AtEndPreamble (moderncv.cls sets pdfpagemode there), so a FullScreen
-    % value here would win and open every CV in fullscreen presentation mode.
+    pdftitle={[FIRST_NAME] [LAST_NAME] - CV},
+    pdfauthor={[FIRST_NAME] [LAST_NAME]},
+    pdfsubject={[Target Role / Field]},
+    pdfkeywords={[Target keywords, Tools, Frameworks]},
     pdfpagemode=UseNone,
 }}
-\usepackage[scale=0.77]{geometry}
+\usepackage[scale=0.82]{geometry}
 \usepackage{import}
+\usepackage{needspace}
+\usepackage{ragged2e}
 
-% Personal data
-\name{[FIRST_NAME]}{[LAST_NAME]}
-% If you have no address to list, DELETE this whole line. \address{}{}{} fails
-% with "There's no line here to end" on every moderncv version.
-\address{[YOUR_ADDRESS]}{}{}
-\phone[mobile]{[YOUR_PHONE]}
-\email{[YOUR_EMAIL]}
-\extrainfo{\href{[YOUR_LINKEDIN_URL]}{LinkedIn}, \href{[YOUR_GITHUB_URL]}{GitHub}}
+% Prevent awkward automatic word breaks across lines while preserving legitimate compound-word hyphens
+\hyphenpenalty=10000
+\exhyphenpenalty=50
+
+% Left-aligned, ragged-right formatting for lists and summaries to prevent stretched word gaps
+% while preserving date/location alignment in \cventry
+\AtBeginEnvironment{itemize}{\raggedright}
+
+% ATS Optimization: Clean text labels for contact info instead of font glyph ligatures
+\renewcommand*{\addresssymbol}{}
+\renewcommand*{\mobilephonesymbol}{Phone:~}
+\renewcommand*{\emailsymbol}{Email:~}
+
+% Personal data (Template placeholders: [FIRST_NAME], [LAST_NAME], [YOUR_EMAIL], [YOUR_PHONE])
+\name{Yashwanth}{Gotike}
+\address{Koblenz, Germany \,|\, <Tailored Role Headline, e.g. Data Engineer / Data Analyst / AI Engineer>}{}{}
+\phone[mobile]{(+49)~17674755646}
+\email{gycrgotike@gmail.com}
+\extrainfo{\href{https://linkedin.com/in/ycrgotike}{LinkedIn: in/ycrgotike} \,|\, \href{https://github.com/ycrgotike}{GitHub: ycrgotike}}
 
 \begin{document}
 \makecvtitle
+\vspace{-12pt}
 
-% 1. Profile statement (1-3 sentences, tailored per role)
-% 2. Skills section
-% 3. Education section
-% 4. Professional Experience section
-% 5. Selected Publications (if applicable)
-% 6. Honors and Awards (if applicable)
-% 7. References
+% 1. Profile statement: exactly 4 rendered lines, ragged-right; background, role-specific skills, connection to job
+% 2. Technical Skills: ragged-right; explicitly include core tools like Python; \section{Technical Skills}
+% 3. Professional Experience: strict reverse chronological (SolTech -> GSR -> ITC Infotech); ragged-right bullets
+% 4. Key Technical Projects: standalone bold title without leading bullet; 1-2 standard sub-bullets
+% 5. Education: strict reverse chronological (M.Sc. Koblenz -> B.Tech. Sardar Vallabhbhai National Institute of Technology); omit expected date for full-time
+% 6. Languages & Honors: strictly languages and honors/awards (no tools/skills)
+% (NOTE: NEVER include "Availability" or "References" sections)
 
 \end{document}
 ```
@@ -123,25 +137,28 @@ Section headings such as `\section{Core Competencies}`, `Professional Experience
 ### Profile Statement / Elevator Pitch (Best Practice)
 This is the most important section to customize. It appears right after `\makecvtitle`.
 
-Write 5-7 lines that function as an "elevator pitch": a concise, compelling introduction explaining why you're qualified for *this specific role*. Focus on what the employer gains from hiring you.
+For every role and application type, write a summary of exactly 4 rendered lines covering relevant background, strongest supported role-specific skills, evidence-backed working qualities (such as analytical problem-solving, careful validation or clear communication), and concluding with an organic, natural mention of the target company and how the candidate's background enables them to support its team or initiatives (e.g., "This background enables me to support <CompanyName> with dependable data integration, automated delivery, and scalable data architectures."). Avoid blatant or formulaic phrasing like "This is how I can contribute". Check the compiled PDF, not source lines. If the summary wraps to more or fewer than four lines, revise its wording and recompile automatically; preserve factual content, role relevance, font size, margins and the two-page CV requirement. Enrollment, expected graduation, availability placement, and restrictions on repeating experience achievements are not summary requirements.
 
 When the role sits outside your home domain, **lead with the domain-transfer argument** - the one or two sentences connecting your background to their problem (e.g. wave physics to radar signal processing) belong in the profile statement's opening, not buried in the cover letter. It is the strongest card a domain-changer holds; play it first.
 
 **Create 2-3 profile statement templates for your main role types:**
 
 <!-- SETUP: These are populated based on your background -->
-**For [YOUR_PRIMARY_ROLE_TYPE] roles:**
-> [YOUR_PROFILE_STATEMENT_TEMPLATE_1]
+**For Data Engineering roles:**
+> Data Engineer with 5+ years of experience designing scalable ETL/ELT pipelines, distributed data warehouses, and cloud infrastructure across Azure, AWS, and GCP. Proven track record migrating ~1.5 TB of institutional data to cloud storage, reducing query latency to sub-30-minute cycles, and implementing CI/CD pipelines for Azure Databricks with GitHub Actions. Currently pursuing M.Sc. in Web and Data Science at University of Koblenz, specializing in big data architectures, Apache Spark, and Airflow. Available within 1 month.
 
-**For [YOUR_SECONDARY_ROLE_TYPE] roles:**
-> [YOUR_PROFILE_STATEMENT_TEMPLATE_2]
+**For Data Analytics & BI roles:**
+> Data Analyst and Business Intelligence Specialist with 5+ years of analytical experience translating complex datasets into high-impact strategic insights. Expert in Python, SQL, and Power BI/DAX, having delivered exploratory analysis across 3M+ records, automated weekly reporting workflows by 40%, and driven an 18% customer retention lift via A/B testing and statistical modeling. Currently pursuing M.Sc. in Web & Data Science at University of Koblenz. Available within 1 month.
+
+**For AI/ML, Data Science & GenAI / Agentic AI roles:**
+> AI/ML Engineer with solid foundations in production data engineering, MLOps, and modern LLM application development. Experienced building end-to-end RAG systems, vector search indexing, and agentic workflows (MVP UPSC project), as well as automated time-series analytics and algorithmic trading pipelines. Skilled in Python, PyTorch, TensorFlow, MLflow, DVC, and cloud deployments on AWS. Available within 1 month.
 
 Statements labeled *[Used for: <company>_<role>]* were extracted from archived application drafts by `/setup` Path A. They are **phrasing references, never fact sources**: when drafting from one, every factual claim still comes from `01-candidate-profile.md` - a past tailored draft does not vouch for its own accuracy.
 
-### Core Competencies / Skills Section (Best Practice)
-Reorder and emphasize based on the role. Use bold category labels.
+### Technical Skills Section (Best Practice)
+Always name this section `\section{Technical Skills}` (never `Core Competencies`). Reorder and emphasize based on the role. Use bold category labels.
 
-List **5-7 key competencies** in bullet format, tailored to the specific job. For each competency, briefly explain how it adds value to the position.
+List **5-7 key competencies/skill groups** in bullet format, tailored to the specific job. For each category, briefly explain how it adds value to the position.
 
 Use the posting's own core term in the matching bullet's bold label when it truthfully applies - ATS and skim-reading hiring managers match literally, and "MLOps" in a heading outperforms a paraphrase like "ML Deployment".
 
@@ -150,25 +167,22 @@ Use the posting's own core term in the matching bullet's bold label when it trut
 - For senior roles, keep education brief (dates and titles only)
 - Include thesis topics when relevant to the target role
 
-#### In-progress qualifications must say so explicitly
-
-**A bare year range is not enough.** An entry reading `2025–2026`, seen partway through 2026, looks like a *finished* degree, because a reader skimming a CV treats a closed range as closed. A profile statement that says "currently completing…" does not fix it: the education entry is where a reader checks the credential, so it has to stand on its own.
-
-State completion inside the entry itself:
-
+**Candidate-Specific Rule for Education:**
+For Yashwanth's Master of Science entry (`10/2024--Present`), NEVER include "In progress, expected September 2027" or any expected completion dates in the body of the Education entry. The date column `10/2024--Present` already conveys ongoing status. Only list coursework directly:
 ```latex
-\item{\cventry{2025--2026}{[Degree], [Field]}{[Institution]}{[Location]}{}{\vspace{1pt}
-In progress, expected [Month Year]. [Relevant topics]
-}}
+\cventry{10/2024--Present}{Master of Science (M.Sc.) -- Web and Data Science}{University of Koblenz}{Koblenz, Germany}{}{\vspace{1pt}
+Coursework: Data Science, Big Data, Machine Learning and Data Mining.
+}
+```
+*Note on Seminars:* Yashwanth completed an advanced academic seminar on **"Data Governance Quality Assurance"** at the University of Koblenz. When data governance, quality assurance, data quality, data profiling, or compliance is mentioned in a target job description, dynamically include the seminar beside the coursework:
+```latex
+\cventry{10/2024--Present}{Master of Science (M.Sc.) -- Web and Data Science}{University of Koblenz}{Koblenz, Germany}{}{\vspace{1pt}
+Coursework: Data Science, Big Data, Machine Learning, Data Mining \,|\, Seminar: Data Governance Quality Assurance.
+}
 ```
 
-Any consistent form works: `In progress, expected <Month Year>.` / `Expected completion <Month Year>.` / a date field of `2025–present`.
-
-Claiming a credential not yet held is a factual misstatement, and it is the kind discovered at transcript or reference check rather than at interview. It costs nothing to prevent. The same applies to in-progress certifications and courses.
-
-**Check for agreement:** for a current student, the profile statement, the education entry, and any availability or work-permit note must all give the same completion date. Contradiction between them is worse than any single version.
-
 ### Professional Experience
+- **Strict reverse chronological order:** Always list the most recent (latest) role first, followed by previous roles in descending order by date.
 - Rewrite bullet points to emphasize aspects most relevant to the target role
 - Use 4-6 bullets for most recent role, 3-4 for previous, 2-3 for older
 - **Emphasize measurable results** where possible: "Reduced processing time by X%", "Model adopted by the team"
@@ -206,10 +220,9 @@ Wherever the CV names a verifiable artifact - a public project, a hackathon entr
 ### Honors and Awards
 - Keep format brief, one line each
 
-### References
-- List 2-4 references with name, title, company, and contact
-- End with: "More references are available upon request."
-- **Do not attach reference letters** - employers typically contact references directly
+### Mandatory Omissions (Strict Rule)
+- **NEVER include "Availability"** in the CV. Availability and work authorization belong in the Cover Letter, not the CV.
+- **NEVER include "References: Available upon request"** or a References section in the CV. Employers request references separately during background checks; a references line consumes valuable page budget and signals an outdated CV layout.
 
 ### LaTeX Special Characters (important)
 
@@ -247,7 +260,7 @@ After writing the CV and before presenting to the user, always compile and visua
 Add `\needspace{5\baselineskip}` immediately before the problematic `\cventry`:
 ```latex
 \needspace{5\baselineskip}
-\item{\cventry{YEAR--YEAR}{Role Title}{Organization}{Location}{}{...}}
+\cventry{YEAR--YEAR}{Role Title}{Organization}{Location}{}{...}
 ```
 Include `\usepackage{needspace}` in the preamble.
 
@@ -310,15 +323,14 @@ The CV **must** fit on exactly 2 pages when compiled. Use these content limits a
 
 | Section | Max budget |
 |---------|-----------|
-| Profile statement | 3-4 lines |
+| Profile statement | Exactly 4 rendered lines |
 | Skills | 5 items, each 1-2 lines |
 | Most recent role | 4-5 bullets |
 | Previous role | 2-3 bullets |
 | Older roles | 2 bullets (1 line each) |
+| Projects | 3-4 projects (1-2 lines each) |
 | Education | 2-3 entries |
-| Publications | 2-3 entries |
-| Awards | 3 entries, single line each |
-| References | "Available upon request." (single line) |
+| Languages & Honors | 2 items (1 line each) |
 
 **If in doubt, cut rather than squeeze.** Reducing `\vspace` or geometry scale to force-fit content makes the CV look cramped.
 
@@ -337,35 +349,52 @@ Cut the lowest-total-score line first, regardless of which section it sits in.
 ### Practical order of cuts (easiest → last resort)
 
 1. **Redundancy.** If an achievement appears in both Core Competencies AND a role bullet, the Core Competencies version is usually the cleaner cut (the experience bullet is more concrete evidence).
-2. **Profile-statement fluff.** A sentence that just restates what Publications or Skills will show. ("Peer-reviewed publications on X..." is already a Publications entry — profile can claim it once and stop.)
-3. **Low-relevance experience bullets.** A bullet about work that does not touch posting keywords, wherever it sits. This cuts across sections before touching the structural list.
-4. **Low-relevance supporting content.** An older-role bullet that does not speak to the target role. A certification that does not touch the posting's stack. A language entry that can be condensed to one line.
-5. **Low-relevance publications.** Keep 1-2 publications that best match the posting. Cut the rest before touching experience bullets.
-6. **Last-resort structural cuts.** Oldest education entry, tightening an older role to 2 bullets, collapsing Certifications into a single line. These only happen if the relevance-weighted cuts above have already been exhausted.
+2. **Profile-statement fluff.** A sentence that just restates what Publications or Skills will show.
+3. **Low-relevance experience bullets.** A bullet about work that does not touch posting keywords, wherever it sits.
+4. **Low-relevance supporting content.** An older-role bullet that does not speak to the target role. A language entry that can be condensed to one line.
+5. **Last-resort structural cuts.** Tightening an older role to 2 bullets, condensing coursework.
 
 ### Pitfalls to avoid
 
-- Do not mechanically cut from the bottom of a static section list without checking relevance. "Cut the oldest role first" is wrong if that role is literally about the skill the posting asks for.
-- Do not cut the one concrete example the cover letter leans on. Relevance is measured against the cover letter you wrote, not just the job posting — interviewers will have read both.
-- Do not cut to fit if the fit is borderline (2.02 pages). Prefer `\enlargethispage{2-3\baselineskip}` on a late section for near-misses; reserve content cuts for genuine overflow (content on page 3 that is more than a single trailing section).
+- Do not mechanically cut from the bottom of a static section list without checking relevance.
+- Do not cut the one concrete example the cover letter leans on.
+- Do not cut to fit if the fit is borderline (2.02 pages). Prefer `\enlargethispage{2-3\baselineskip}` on a late section for near-misses; reserve content cuts for genuine overflow.
+
+## Canonical CV Tailoring Standards
+
+All CVs generated in this workspace must adhere to the following dynamic tailoring and layout rules:
+
+### 1. Dynamic Tailoring for Every Application
+- **Project Selection & Ordering:** Dynamically select and order projects by direct relevance to the job posting. For example, prioritize MVP UPSC for LLM/RAG/GenAI roles, Algo Trading Platform for time-series/quantitative roles, SQL Data Warehouse for BI/analytics/modeling roles, and Real-Time Pipeline for streaming/Airflow roles. For platform operations, prioritize projects demonstrating supported deployment, containers, CI/CD and infrastructure automation; do not default to trading or dashboard examples.
+- **Skill Ordering by Employer Priorities:** Order skill categories and individual tools/skills to reflect the employer's stated requirements. Never present a static skill list.
+- **Reordering Experience Bullets:** Reorder the bullet points within SolTech InfoLabs and G.S.R to foreground the achievements most relevant to the target role's day-to-day responsibilities.
+- **Natural Terminology:** Use the posting's exact terms naturally where accurate; avoid keyword stuffing and artificial technology lists.
+- **Factual Grounding & Zero Fabrication:** Knowing a technology supports listing it as a skill; claiming an implementation or achievement requires actual completed work. Preserve confirmed skills and implementations; NEVER invent metrics, responsibilities, qualifications, or outcomes.
+- **Historical Accuracy:** Keep historical job titles and dates strictly accurate. Tailor the professional headline beside `Koblenz, Germany` (e.g. `Data Engineer`, `Data Analyst`, or `AI Engineer`) without implying an employment title not held.
+
+### 2. Layout, Structure & Content Rules
+- **Left-Aligned, Ragged-Right Text:** Use left-aligned, ragged-right text (`\raggedright` / `\RaggedRight`) for CV summaries, skills lists, and bullet points. Remove stretched word spacing caused by full justification while preserving date/location margin alignment in `\cventry`.
+- **Role-Specific Summary:** For every role and application type, write a summary of exactly 4 rendered lines covering relevant background, strongest supported role-specific skills, evidence-backed working qualities (such as analytical problem-solving, careful validation or clear communication), and how they connect to the particular job responsibilities. Check the compiled PDF, not source lines. If the summary wraps to more or fewer than four lines, revise its wording and recompile automatically; preserve factual content, role relevance, font size, margins and the two-page CV requirement. Enrollment, expected graduation, availability placement, and restrictions on repeating experience achievements are not summary requirements.
+- **Project Presentation (Standalone Title without Leading Bullet):** Format project titles as standalone bold text without a leading bullet glyph (`\textbf{Project Title (Stack)}`). Use 1 to 2 concise standard bullets underneath with consistent indentation (`\begin{itemize}\item ... \item ... \end{itemize}`). Replace any custom bullet glyphs that extract incorrectly with standard bullets. Avoid dense, technology-filled paragraphs.
+- **Explicit Technical Skills Grounding:** Ensure core languages and tools emphasized elsewhere in the CV or cover letter (such as Python, SQL, Git, Docker) appear explicitly in `\section{Technical Skills}` when relevant.
+- **Student Applications (Page 1 Visibility):** For student or intern roles (Werkstudent / Praktikum), make current university enrollment and expected graduation (e.g. M.Sc. Web and Data Science at University of Koblenz, expected September 2027) visible on Page 1 (within the same summary paragraph, with the entire paragraph limited to exactly 4 rendered lines). Use the application-specific availability rule in `06-cover-letter-templates.md`; never assume working-student hours apply to an internship. (For full-time roles, omit expected graduation under Education).
+- **Prevent Awkward Word Breaks:** Prevent awkward automatic word breaks such as "techni-cal" and "environ-ments" (set `\hyphenpenalty=10000`), while preserving legitimate compound-word hyphens (e.g. "end-to-end", "near-real-time", "cloud-native").
+- **Strict 2-Page Constraint:** The final compiled CV MUST be **exactly 2 pages**. Balance content evenly across both pages without filler, excessive whitespace, or unreadably small fonts. Keep headings with their supporting text (`\needspace`).
+- **Section Naming:** Always name the primary skills section `\section{Technical Skills}` — NEVER use 'Core Competencies'.
+- **Languages & Honors:** Strictly reserved for languages and honors/awards; never add tools or technical skills here.
+- **Omissions:** NEVER include "Availability" or "References: Available upon request" sections in the CV.
 
 ## Recommended Section Order
 
-The section order varies by role type:
+The standard section order for all technical / data engineering / AI / analytics roles:
 
-**For technical / data science / ML roles:**
-1. Profile statement / elevator pitch
-2. Core competencies / Skills
-3. Professional Experience (reverse chronological)
-4. Education (reverse chronological)
-5. Languages
-6. Publications & Awards
-7. References
+1. Profile statement / elevator pitch (exactly 4 rendered lines for every role, ragged-right; relevant background, strongest role-specific skills, connection to the job)
+2. Technical Skills (ordered by employer priorities; always `\section{Technical Skills}`; ragged-right; explicitly includes core tools like Python)
+3. Professional Experience (strict reverse chronological: SolTech $\rightarrow$ G.S.R $\rightarrow$ ITC Infotech; ragged-right bullets)
+4. Key Technical Projects (ordered dynamically by role relevance: 3-4 projects; standalone bold titles without leading bullet; 1-2 standard sub-bullets each)
+5. Education (strict reverse chronological: M.Sc. Koblenz $\rightarrow$ B.Tech. Sardar Vallabhbhai National Institute of Technology; omit expected date for full-time)
+6. Languages & Honors (languages and awards only)
 
-**For domain-specific / specialist roles:**
-1. Profile statement / elevator pitch
-2. Core competencies / Skills
-3. Education (reverse chronological) - credentials are a key qualifier
-4. Professional Experience (reverse chronological)
-5. Publications & Awards
-6. References
+### Technology evidence for every role
+
+Use `tools/technology_evidence.py` to separate positively confirmed skills, transferable experience with related tools, and technologies requiring confirmation. Only positively recorded technologies belong in Technical Skills; posting text never creates candidate facts. Preserve source evidence and unfamiliar tool candidates in the application review report. Confirmed relevant tools outside the fixed skill lists must still be considered. Rank source-backed responsibilities by specificity, repeated emphasis and supporting title context; a title never creates a duty absent from the task section. Retain all matched source excerpts and unmapped tasks in the review report. Use this priority order consistently for the summary, skills, experience and projects. Distinguish agent development, AI evaluation, controlled access and model serving; for applied AI product roles, lead with confirmed agent/API work and deployment evidence rather than generic data integration. Reprioritize specific work such as software QA, research or content operations ahead of generic reporting/documentation. Software testing is distinct from A/B testing and data-quality checks.

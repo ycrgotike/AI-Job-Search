@@ -66,7 +66,7 @@ For each **enabled** portal skill:
 
 1. Read its `SKILL.md` to find the correct `bun run …` invocation and supported flags.
 2. Translate the query terms from `search-queries.md` into that portal's flag format (e.g. `--key`, `--search-string`, `--query`, filter codes — whatever the portal's SKILL.md specifies).
-3. Scope to the last 14 days using the portal's supported recency **filter** flag (`--jobage`, `--since <YYYY-MM-DD>`, etc. — as documented per portal). A portal with **no recency flag** (jobdanmark offers none) still gets scoped: every portal's search output carries a `date` field, so filter client-side — drop results whose `date` is older than 14 days after the call returns, and never invent a flag the portal's SKILL.md does not document (the CLIs reject unknown flags). `--order PublicationDate` is a sort, and a sort is not a filter — pairing it with a `--limit` is a defensible approximation on a portal that offers nothing better (jobnet), but apply the client-side date filter on top all the same.
+3. Scope to the last 2 days (max 2 days / 48 hours old) using the portal's supported recency **filter** flag (`--jobage 2`, `--since <YYYY-MM-DD>`, etc. — as documented per portal). A portal with **no recency flag** (jobdanmark offers none) still gets scoped: every portal's search output carries a `date` field, so filter client-side — drop results whose `date` is older than 2 days after the call returns, and never invent a flag the portal's SKILL.md does not document (the CLIs reject unknown flags). `--order PublicationDate` is a sort, and a sort is not a filter — pairing it with a `--limit` is a defensible approximation on a portal that offers nothing better (jobnet), but apply the client-side date filter on top all the same.
 4. Cap results to ~20 per call using the portal's limit flag.
 5. Use `--format json` for machine-readable output.
 
@@ -117,6 +117,8 @@ site for the role and store that URL instead, or drop the candidate rather than 
 fragment link.
 
 For every candidate:
+- **Discard if posting requires German C1/C2 / verhandlungssicher / native German:** Yashwanth Gotike's profile is German B2 (Intermediate) and English C1 (Fluent). Postings requiring minimum German C1/C2 or verhandlungssicher are an immediate hard rejection and must not be saved to `seen_jobs.json`.
+- **Discard if LinkedIn posting is Easy Apply:** The candidate exclusively targets direct employer applications (company career portals / offsite apply) where tailored ModernCV and XeLaTeX cover letters are evaluated. Any LinkedIn posting using "Easy Apply" (`apply-link-onsite`, `guest-to-member-job-apply`) must be discarded immediately and never saved to `seen_jobs.json`.
 - Skip if the URL matches any existing `seen_jobs.json` entry, regardless of
   that entry's key. This preserves dedup continuity for postings stored under
   the pre-helper key rule while new entries use the canonical key from Step 4.
@@ -137,7 +139,11 @@ For each new job, do a rapid fit check (NOT the full evaluation from `04-job-eva
 - **Medium match**: Role is adjacent to your experience
 - **Low match**: Role requires significant skills you lack
 
-**Language override:** before assigning a match level, check the posting against `04-job-evaluation.md`'s Language Gate (a required language you haven't declared at all in your CLAUDE.md Languages table). A required language that's entirely undeclared overrides skill fit: mark it **Low** regardless of how well the skills align, and name it in the highlight bullets so it isn't buried under an otherwise-good-looking match. A **declared** language at a requirement that reads higher than your declared level is *not* an override — score fit normally, but add a red-flag bullet under that job's highlights (Step 5) quoting the posting's requirement next to your declared level, so the gap is visible without being auto-downgraded.
+**German C1 Gate & Language override:** 
+- **Strict German C1/C2 Exclusion:** Job postings requiring minimum German C1, C2, verhandlungssicher, business-fluent German, or native German must NEVER be scraped, saved to `seen_jobs.json`, or presented to the user. Candidate possesses German B2 (Intermediate). Any posting with minimum German C1+ requirement is a hard exclusion and must be discarded immediately during Step 2 parsing.
+- **Strict LinkedIn Easy Apply Exclusion:** Job postings from LinkedIn with "Easy Apply" must NEVER be scraped, saved to `seen_jobs.json`, or presented to the user.
+- **Other Undeclared Languages:** A required language that is entirely undeclared in your CLAUDE.md Languages table (e.g., Polish, French) overrides skill fit: mark it **Low** or discard it.
+- **Declared Languages at or below candidate level:** German B2 / B1 or English C1 / conversational / fluent English are a clean PASS.
 
 ### Step 4: Deduplicate & Store
 
@@ -177,7 +183,7 @@ The `source` field records which mechanism produced the entry: `cli` for Step 1b
 
 `deadline` is a base field rather than a `/rank` extension: Step 2's detail fetch already extracts the application deadline, so it is written when the job is first seen and refreshed by `/rank` Step 4 when a scoring agent returns a different value. `null` means the posting states no deadline; a missing key means the entry predates this field - **never infer a deadline** from either, and never backfill by guessing.
 
-`posted_date` is the posting's own publication date, taken from the `date` field Step 2's contract already guarantees on every portal CLI's search output. Step 1b uses that date to scope the run to the last 14 days and then drops it, so nothing downstream can distinguish a posting published yesterday from one published two years ago - `first_seen` is when this scraper first saw the entry, not when the employer posted it. Persisting it makes Step 1b's window auditable after the run and gives `/rank` a freshness signal to weigh, instead of rediscovering the date and recording it in prose that nothing reads. That gap landed for real: a freehire-search posting dated 2024-05-13 was scraped and ranked Strong Fit at position 1 of 133, its own scoring note observing the listing "may be long stale" with nothing able to act on it. `null` means the portal returned no date for that result (the CLIs emit `date: null` when a listing omits it); a missing key means the entry predates this field - **never infer a posting date** from either, and never backfill by guessing.
+`posted_date` is the posting's own publication date, taken from the `date` field Step 2's contract already guarantees on every portal CLI's search output. Step 1b uses that date to scope the run to the last 2 days and then drops it, so nothing downstream can distinguish a posting published yesterday from one published two years ago - `first_seen` is when this scraper first saw the entry, not when the employer posted it. Persisting it makes Step 1b's window auditable after the run and gives `/rank` a freshness signal to weigh, instead of rediscovering the date and recording it in prose that nothing reads. That gap landed for real: a freehire-search posting dated 2024-05-13 was scraped and ranked Strong Fit at position 1 of 133, its own scoring note observing the listing "may be long stale" with nothing able to act on it. `null` means the portal returned no date for that result (the CLIs emit `date: null` when a listing omits it); a missing key means the entry predates this field - **never infer a posting date** from either, and never backfill by guessing.
 
 3. Only present jobs NOT already in the seen list (matched by URL or
    company+title) or tracker.

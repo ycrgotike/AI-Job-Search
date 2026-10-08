@@ -1,183 +1,171 @@
-%% Example CV - [YOUR_NAME]
+%% Master CV - Yashwanth Gotike
 %% Comprehensive overview of all competencies, experience, and achievements.
 %% Use as a master reference when tailoring role-specific CVs.
-%%
-%% SETUP: Run /setup to populate this with your actual information.
 %% Compile with: lualatex main_example.tex
-%% (pdflatex often fails on modern MiKTeX with fontawesome5 font-expansion errors.)
 
 \documentclass[11pt,a4paper,sans]{moderncv}
 \moderncvstyle{banking}
 \moderncvcolor{blue}
 
 % Force the name and section headings to render in moderncv blue (color1).
-% Default banking leaves them black: moderncvstylebanking.sty's \colorlet
-% copies (not aliases) the pre-scheme accent colour, so the name colours are
-% frozen before \moderncvcolor runs. Re-let them after. \namefont is the hook
-% every name-style macro routes through, so this also works on moderncv 2.3.1
-% (Debian/Ubuntu apt), which has no \firstnamestyle/\lastnamestyle at all.
-\renewcommand*{\namefont}{\fontsize{34}{36}\bfseries\upshape}
+\renewcommand*{\namefont}{\fontsize{32}{34}\bfseries\upshape}
 \colorlet{firstnamecolor}{color1}
 \colorlet{lastnamecolor}{color1}
 \colorlet{namecolor}{color1}
 \renewcommand*{\sectionstyle}[1]{{\sectionfont\color{color1}#1}}
 
 \usepackage[utf8]{inputenc}
-% moderncv loads hyperref itself in an \AtEndPreamble hook, so \hypersetup
-% must go in an \AtEndPreamble of our own: on moderncv < 2.4 a top-level
-% \usepackage{hyperref} clashes with the class's own
-% \RequirePackage[unicode]{hyperref}. From 2.4.0 the class passes its options
-% through \PassOptionsToPackage instead, which is what removes that clash.
 \AtEndPreamble{\hypersetup{
     colorlinks=true,
     linkcolor=blue,
     filecolor=magenta,
     urlcolor=blue,
-    pdftitle={[YOUR_NAME] - CV},
-    % Keep pdfpagemode=UseNone: this block runs after moderncv's own
-    % \AtEndPreamble (moderncv.cls sets pdfpagemode there), so a FullScreen
-    % value here would win and open every CV in fullscreen presentation mode.
+    pdftitle={Yashwanth Gotike - CV},
+    pdfauthor={Yashwanth Gotike},
+    pdfsubject={Data Engineer and Data Analyst},
+    pdfkeywords={Data Engineer, Data Analyst, Python, SQL, ETL, Cloud, Azure, AWS, GCP, PySpark, Machine Learning, Agentic AI, RAG},
     pdfpagemode=UseNone,
 }}
-\usepackage[scale=0.80]{geometry}
+\usepackage[scale=0.82]{geometry}
 \usepackage{import}
+\usepackage{needspace}
 
-% personal data
-\name{[First]}{[Last]}
-% If you have no address to list, DELETE this whole line. \address{}{}{} fails
-% with "There's no line here to end" on every moderncv version.
-\address{[Your Address, City, Country]}{}{}
-\phone[mobile]{[+XX XXXXXXXXXX]}
-\email{[your.email@example.com]}
-\extrainfo{\href{[https://linkedin.com/in/your-profile]}{LinkedIn}, \href{[https://github.com/your-username]}{GitHub}}
+% Prevent awkward automatic word breaks across lines while preserving legitimate compound-word hyphens
+\hyphenpenalty=10000
+\exhyphenpenalty=50
+
+% Left-aligned, ragged-right formatting for lists to prevent stretched word spacing
+\AtBeginEnvironment{itemize}{\raggedright}
+
+% ATS Optimization: Clean text labels for contact info instead of font glyph ligatures
+\renewcommand*{\addresssymbol}{}
+\renewcommand*{\mobilephonesymbol}{Phone:~}
+\renewcommand*{\emailsymbol}{Email:~}
+
+% Personal data
+\name{Yashwanth}{Gotike}
+\address{Koblenz, Germany \,|\, Data Engineer | Data Analyst}{}{}
+\phone[mobile]{(+49)~17674755646}
+\email{gycrgotike@gmail.com}
+\extrainfo{\href{https://linkedin.com/in/ycrgotike}{LinkedIn: in/ycrgotike} \,|\, \href{https://github.com/ycrgotike}{GitHub: ycrgotike}}
 
 \begin{document}
 
 \makecvtitle
+\vspace{-12pt}
 
 % ============================================================
 %     PROFILE STATEMENT
 % ============================================================
-
-\vspace{6pt}
-\small{[Write a 3-5 line profile statement tailored to the role you're applying for. Focus on what makes you uniquely qualified. Example: "Data scientist with a PhD in [field] and X years of industry experience. Combines deep domain expertise in [domain] with strong applied machine learning and Python development skills. Experienced in developing end-to-end ML pipelines, from data ingestion to stakeholder-facing dashboards."]}
+{\raggedright\small Data Engineer and Data Analyst with 5+ years of experience building scalable ETL/ELT pipelines, dimensional data warehouses, and business intelligence systems across AWS, Azure, and GCP. Experienced in AI/ML and GenAI workflows including MLOps, RAG architectures, and LLM applications. Reduced infrastructure costs by 30\% and improved reporting turnaround by 40\%; currently pursuing M.Sc. in Web and Data Science at the University of Koblenz, open to full-time, working student, and analytics/engineering opportunities across Germany.\par}
 
 % ============================================================
-%     CORE COMPETENCIES
+%     TECHNICAL SKILLS
 % ============================================================
-
-\section{Core Competencies}
+\section{Technical Skills}
 \vspace{1pt}
 \begin{itemize}
-
-\item \textbf{[Skill Category 1]}: [Specific skills, frameworks, tools. Be concrete.]
-
-\item \textbf{[Skill Category 2]}: [Specific skills, frameworks, tools.]
-
-\item \textbf{[Skill Category 3]}: [Specific skills, frameworks, tools.]
-
-\item \textbf{[Skill Category 4]}: [Domain expertise, methods, approaches.]
-
-\item \textbf{[Skill Category 5]}: [Tools, platforms, software.]
-
+\item \textbf{Data Engineering \& Big Data}: ETL/ELT Pipelines, Apache Spark, Airflow, PySpark, Azure Data Factory, Azure Databricks, Synapse Analytics, Star Schema, Dimensional Modeling.
+\item \textbf{Data Analytics \& BI}: Power BI, DAX, Tableau, A/B Testing, Hypothesis Testing, Cohort Analysis, Exploratory Data Analysis (EDA).
+\item \textbf{AI/ML \& Generative AI}: Large Language Models (LLMs), RAG, Vector Databases, MLOps (MLflow, DVC), TensorFlow, PyTorch, Scikit-learn, Agentic AI Workflows.
+\item \textbf{Cloud \& DevOps}: AWS (EC2, S3), Microsoft Azure, Google Cloud Platform (GCP), Docker, CI/CD (GitHub Actions), Git.
+\item \textbf{Languages \& Databases}: Python, SQL (T-SQL, PostgreSQL, MySQL), R, Scala, Java, .NET.
 \end{itemize}
 
 % ============================================================
 %     PROFESSIONAL EXPERIENCE
 % ============================================================
-
 \section{Professional Experience}
-\vspace{3pt}
-\begin{itemize}
+\vspace{2pt}
 
-% --- Most Recent Role ---
-\item{\cventry{[YYYY-Present]}{[Job Title]}{[Company]}{[City, Country]}{}{\vspace{1pt}
+\cventry{09/2022--09/2024}{Data Analyst}{SolTech InfoLabs Pvt Ltd}{Hyderabad, India}{}{\vspace{1pt}
 \begin{itemize}
-    \item {[Achievement or responsibility 1 - be specific, use numbers where possible]}
-    \item {[Achievement or responsibility 2]}
-    \item {[Achievement or responsibility 3]}
-    \item {[Achievement or responsibility 4]}
-\end{itemize}}}
+    \item {Conducted exploratory data analysis (EDA) and SQL query optimization on operational datasets exceeding 3 million records, uncovering critical business trends and process bottlenecks.}
+    \item {Designed statistical A/B tests and cohort retention models, driving an 18\% customer retention improvement through data-backed recommendations.}
+    \item {Engineered automated Power BI dashboards leveraging advanced DAX calculations, reducing recurring reporting generation time by 40\%.}
+    \item {Automated routine data extraction and reporting pipelines in Python, eliminating 6 hours of weekly manual effort and cutting turnaround from 3 days to 1 day.}
+\end{itemize}}
 
 \vspace{3pt}
 
-% --- Previous Role ---
-\item{\cventry{[YYYY-YYYY]}{[Job Title]}{[Company]}{[City, Country]}{}{\vspace{1pt}
+\cventry{04/2019--09/2022}{Data Engineer}{G.S.R Educational Institutions}{Koilkuntla, India}{}{\vspace{1pt}
 \begin{itemize}
-    \item {[Achievement or responsibility 1]}
-    \item {[Achievement or responsibility 2]}
-    \item {[Achievement or responsibility 3]}
-\end{itemize}}}
+    \item {Architected and maintained enterprise ETL/ELT pipelines using Azure Data Factory and Python, consolidating student records, LMS metrics, and administrative data into a unified warehouse.}
+    \item {Reduced reporting data latency from daily batch runs (24+ hours) to near real-time updates (under 30 minutes), enabling timely intervention and performance tracking.}
+    \item {Migrated over 1.5 TB of institutional relational data to scalable cloud storage, optimizing analytical query throughput and cutting infrastructure overhead by 30\%.}
+    \item {Engineered automated CI/CD deployment pipelines for Azure Databricks using GitHub Actions, standardizing release cycles across the data engineering team.}
+\end{itemize}}
 
 \vspace{3pt}
 
-% --- Earlier Role ---
-\item{\cventry{[YYYY-YYYY]}{[Job Title]}{[Company]}{[City, Country]}{}{\vspace{1pt}
+\needspace{11\baselineskip}
+\cventry{08/2018--04/2019}{Associate IT Consultant}{ITC Infotech Ltd}{Bengaluru, India}{}{\vspace{1pt}
 \begin{itemize}
-    \item {[Achievement or responsibility 1]}
-    \item {[Achievement or responsibility 2]}
-\end{itemize}}}
+    \item {Developed a cloud-native inspection request application using OutSystems and .NET, modernizing legacy systems and automating request routing via REST API integrations.}
+    \item {Achieved 40\% faster system response times and maintained zero unplanned downtime post-deployment across enterprise workflows.}
+\end{itemize}}
 
+% ============================================================
+%     PROJECTS
+% ============================================================
+\needspace{6\baselineskip}
+\section{Key Technical Projects}
+\vspace{1pt}
+
+\textbf{MVP UPSC (GenAI, LLMs \& RAG)}
+\begin{itemize}
+    \item {Architected intelligent prep assistant featuring dense embedding retrieval over multi-domain corpuses, vector search indexing, and agentic multi-step validation with LangChain and FastAPI.}
+\end{itemize}
+
+\vspace{2pt}
+\textbf{Algo Trading Platform (Quantitative Analytics)}
+\begin{itemize}
+    \item {Developed automated streaming pipeline ingesting financial time-series, calculating technical indicators with Pandas and NumPy, and backtesting quantitative strategies with Sharpe ratio risk metrics.}
+\end{itemize}
+
+\vspace{2pt}
+\textbf{Kidney Disease Classification (Deep Learning \& MLOps)}
+\begin{itemize}
+    \item {Trained transfer-learning computer vision models with PyTorch and TensorFlow; orchestrated full MLOps lifecycle with MLflow, DVC, Flask REST API, and CI/CD on AWS.}
+\end{itemize}
+
+\vspace{2pt}
+\textbf{SQL Data Warehouse \& Analytics}
+\begin{itemize}
+    \item {Modeled dimensional star schema warehouse in MS SQL Server; created automated ETL/ELT scripts and complex analytical queries for retention and cumulative KPIs.}
+\end{itemize}
+
+\vspace{2pt}
+\textbf{Real-Time Twitter Data Pipeline}
+\begin{itemize}
+    \item {Implemented fault-tolerant streaming extraction pipeline using Apache Airflow orchestration, Python ETL, and AWS EC2 deployment.}
 \end{itemize}
 
 % ============================================================
 %     EDUCATION
 % ============================================================
-
+\needspace{5\baselineskip}
 \section{Education}
 \vspace{1pt}
-\begin{itemize}
 
-\item{\cventry{[YYYY-YYYY]}{[Degree] in [Field]}{[Institution]}{[City, Country]}{}{\vspace{1pt}
-Thesis: ``[Thesis Title].'' [Brief description of research focus.]
-}}
+\cventry{10/2024--Present}{Master of Science (M.Sc.) -- Web and Data Science}{University of Koblenz}{Koblenz, Germany}{}{\vspace{1pt}
+Coursework: Data Science, Big Data, Machine Learning and Data Mining.
+}
 
-\vspace{3pt}
+\vspace{2pt}
 
-\item{\cventry{[YYYY-YYYY]}{[Degree] in [Field]}{[Institution]}{[City, Country]}{}{\vspace{1pt}
-[Brief description or key topics.]
-}}
-
-\end{itemize}
+\cventry{07/2014--05/2018}{Bachelor of Technology (B.Tech.) -- Computer Engineering}{Sardar Vallabhbhai National Institute of Technology}{Surat, India}{}{\vspace{1pt}
+Coursework: Artificial Intelligence, Data Structures and Algorithms, Database Management Systems.
+}
 
 % ============================================================
-%     LANGUAGES
+%     LANGUAGES & HONORS
 % ============================================================
-
-\section{Languages}
+\section{Languages \& Honors}
 \vspace{1pt}
 \begin{itemize}
-\item {[Language 1] (native), [Language 2] (fluent), [Language 3] (intermediate).}
-\end{itemize}
-
-% ============================================================
-%     PUBLICATIONS (optional)
-% ============================================================
-
-\section{Publications}
-\vspace{1pt}
-\begin{itemize}
-\item {[Author(s)] ([Year]). [Title]. [Journal/Conference]. \href{[DOI_URL]}{DOI link}}
-\end{itemize}
-
-% ============================================================
-%     HONORS AND AWARDS (optional)
-% ============================================================
-
-\section{Honors and Awards}
-\vspace{1pt}
-\begin{itemize}
-\item{\textbf{[Award Name]} -- [Event/Organization] ([Year]).}
-\end{itemize}
-
-% ============================================================
-%     REFERENCES
-% ============================================================
-
-\section{References}
-\vspace{1pt}
-\begin{itemize}
-\item{Available upon request.}
+\item \textbf{Languages}: English (C1 -- Fluent), German (B2 -- Intermediate).
+\item \textbf{Honors \& Awards}: Chairman's Award for Process Improvements -- ITC Infotech Ltd (2018/2019).
 \end{itemize}
 
 \end{document}

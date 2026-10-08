@@ -77,6 +77,9 @@ Also read the most recent existing CV and cover letter files for concrete struct
 *The master candidate profile (`01-candidate-profile.md`), the master CV (`cv/main_example.tex`), and CLAUDE.md's Candidate Profile section are the sole source of truth for facts; existing tailored CVs may be read for structure and phrasing only, never as a source of claims.*
 
 ### Requirement coverage (both documents)
+- Build a responsibility-to-evidence map before drafting: each priority responsibility maps to a confirmed skill, a supported implementation/example, or an honest learning gap. Apply role-family emphasis from `03-writing-style.md`; a title keyword is not enough to select the content.
+- Read newly confirmed skills from `01-candidate-profile.md`. Do not infer employer attribution, production scale, years of use or measured outcomes from skill confirmation alone.
+- Identify the requisition ID and required supporting files; apply the availability and attachment rules in `06-cover-letter-templates.md`.
 - **Every requirement the posting states gets addressed - matched or honestly gapped, never silently omitted.** A stated requirement the candidate lacks (a tool, a clearance, years of experience) is acknowledged with an honest bridge ("not in my daily toolkit yet; a natural extension of X"), because omission reads as hiding once an interviewer asks. Build the requirement list from Step 1 and check both drafts against it before Step 3.
 - **Engage nice-to-haves by name** where the profile supports honest adjacency (e.g. "conceptually aligned with <named tool>"), and use the posting's own term over a synonym wherever it is truthfully applicable - including in CV section headings (a posting hiring for "MLOps" should find a heading containing "MLOps", not only a paraphrase).
 - **Address stated logistics and prerequisites** in the cover letter where the posting raises them: security clearance willingness, start date or availability, commute or location fit, and the posting's reference/job ID where one exists. When the employer operates across several countries, a truthful language-capabilities sentence mapped to their footprint is high-value targeting.
@@ -84,21 +87,36 @@ Also read the most recent existing CV and cover letter files for concrete struct
 *In both filenames below, `<company>_<role>` is derived by the **Subfolder naming** rule in `documents/README.md` — the same rule `/outcome` Step 1.4 uses for the archive folder, so a `/` or other path character in a company or role name can never split the filename across directories.*
 
 ### CV (`cv/main_<company>_<role><CV_EXT>`)
-- In the **CV language from the profile** (the `CV language:` line in CLAUDE.md's Identity section). When the profile does not set one, default to **English**. Never switch language per posting - the CV language is a profile-level choice, so all CVs stay consistent and reusable
-- Follow the moderncv/banking format from `05-cv-templates.md`
-- Tailor the profile statement and experience bullets to the specific role
-- Reframe skills and achievements to match job requirements
-- Keep to 2 pages
-- **Grounding Audit:** Before writing to disk, audit all tailored bullet points against the union of three sources: `.claude/skills/job-application-assistant/01-candidate-profile.md` + the master CV (`cv/main_example.tex`) + `CLAUDE.md`'s Candidate Profile section to verify that all dates, roles, and metrics match exactly (zero profile drift or fabrication).
+- In the **CV language from the profile** (English). Never switch language per posting.
+- Follow the moderncv/banking format from `05-cv-templates.md` using standard section headings (`\section{Technical Skills}`, `\section{Professional Experience}`, `\section{Key Technical Projects}`, `\section{Education}`, `\section{Languages & Honors}`).
+- **Left-Aligned, Ragged-Right Text:** Use left-aligned, ragged-right text (`\raggedright` / `\RaggedRight`) for CV summaries, skills lists, and bullet points. Remove stretched word spacing caused by full justification while preserving date/location margin alignment in `\cventry`.
+- **Dynamic Prioritization:**
+  - Select and order projects by direct relevance to the job posting.
+  - Order skill categories and individual skills by the employer's stated priorities.
+  - Reorder experience bullets within roles to foreground the most relevant achievements.
+  - Never apply a fixed project list or static section order to every application.
+- **Role-Specific Summary:** For every role and application type, write a summary of exactly 4 rendered lines covering relevant background, strongest supported role-specific skills, and how they connect to the particular job responsibilities. Check the compiled PDF, not source lines. Enrollment, expected graduation, availability placement, and restrictions on repeating experience achievements are not summary requirements.
+- **Projects (Standalone Title without Leading Bullet):** Format project titles as standalone bold text without leading bullet glyphs (`\textbf{Project Title (Stack)}`). Use 1 to 2 concise standard bullets underneath with consistent indentation (`\begin{itemize}\item ... \item ... \end{itemize}`). Replace any custom bullet glyphs that extract incorrectly with standard bullets. Avoid dense technology-filled paragraphs.
+- **Explicit Technical Skills Grounding:** Ensure core languages and tools emphasized elsewhere (such as Python, SQL, Git, Docker) appear explicitly in `\section{Technical Skills}` when relevant.
+- **Student Applications (Page 1 Visibility):** For student or intern positions (Werkstudent / Praktikum), make confirmed university enrollment and expected graduation (e.g., M.Sc. Web and Data Science at University of Koblenz, expected September 2027) visible on Page 1 (within the same summary paragraph, with the entire paragraph limited to exactly 4 rendered lines). Include confirmed weekly hours (up to 20h/week during semester) and start date where appropriate; never invent missing details. (For full-time roles, omit expected graduation dates under Education).
+- **Prevent Awkward Word Breaks:** Set `\hyphenpenalty=10000` to prevent awkward automatic word breaks ("techni-cal", "environ-ments") while preserving legitimate compound-word hyphens ("end-to-end", "near-real-time", "cloud-native").
+- **Strict 2-Page Constraint:** The final compiled CV MUST be **exactly 2 pages**. Balance content evenly across both pages without filler, excessive whitespace, or unreadably small fonts. Keep headings with their supporting text (`\needspace`).
+- **Omissions:** NEVER include "Availability" or "References: Available upon request" in the CV.
+- **Grounding Audit:** Before writing to disk, audit all tailored bullet points against the union of three sources: `.claude/skills/job-application-assistant/01-candidate-profile.md` + the master CV (`cv/main_example.tex`) + `CLAUDE.md`'s Candidate Profile section to verify that all dates, roles, and metrics match exactly (zero profile drift or fabrication). Preserve confirmed skills and implementations; never invent metrics or outcomes.
 
 ### Cover Letter (`cover_letters/cover_<company>_<role><COVER_EXT>`)
-- **Match the language of the job posting** (Danish posting -> Danish cover letter, English posting -> English cover letter)
-- Follow the structure from `06-cover-letter-templates.md`
-- Use the `cover.cls` template
-- Tailor the opening paragraph to the specific role and company
-- Address to a named person if available in the posting, otherwise "Dear Hiring Manager" (or equivalent in posting language)
-- Keep to approximately one page
-- Any mention of agentic coding or AI tooling must reference **Claude Code** by name
+- **Strict 1-Page Constraint:** The final compiled cover letter MUST be **exactly 1 page**, including header, recipient details, date, subject, body, closing, and signature.
+- **Language:** ALWAYS write cover letters in **English**, even when applying to German companies or postings written in German, unless the candidate explicitly requests otherwise. Keep language proficiency claims accurate: English (C1 / Fluent) and German (B2 / Intermediate).
+- Follow the structure from `06-cover-letter-templates.md` using `cover.cls` with typography and restrained visual accents matching the CV.
+- Maintain compact, consistent spacing between header, recipient block, date, subject line, and body, leaving sufficient room for closing and signature. Reduce excessive vertical space between recipient block and date.
+- **Opening Paragraph (2–3 Concise Sentences):** Limit the opening to 2–3 concise sentences. Mention the role title once and connect relevant experience directly to the work, without redundantly repeating the job title or stating years of experience.
+- **Rewrite Around Actual Responsibilities:** Genuinely rewrite cover letters around each role's actual stated responsibilities and technical challenges. Do not merely substitute company names and keywords into a static template. Remove generic praise ("renowned company", "industry leader") and bullets that duplicate the opening or other examples.
+- **Targeted Evidence:** Feature 1 or 2 relevant examples, explaining how that experience directly helps with the employer's tasks. Do not repeat the entire CV. Anchor every example to where the work occurred (company, project, or academic seminar).
+- **Paragraphs & Bullets:** Use 3 or 4 short paragraphs, or concise paragraphs with up to 3 short bullets if that improves visual scanning. Ensure all bullets anchor where the work occurred and do not duplicate the opening.
+- **Recipient & Greeting:** Use the correct employer, role title, requisition number, and verified contact person. Use a neutral greeting ("Dear Hiring Team,") when contact is unknown.
+- **Confirmed Availability Details:** Replace vague availability statements with confirmed details (e.g., "available with 1 month notice" or confirmed earliest start date; up to 20 hours/week for student roles). Avoid "contribute immediately" when recorded start date is later.
+- **Prose Quality:** Avoid clichés, inflated adjectives, repetitive phrases, and awkward sentence structures. Prevent awkward automatic word breaks ("techni-cal", "environ-ments") while preserving legitimate compound-word hyphens.
+- Any mention of agentic coding or AI tooling must reference **Claude Code** by name.
 
 Write both files to disk. Keep the exact text of both drafts in working memory — you will pass them inline to the reviewer in Step 3 and revise them in Step 4 without re-reading.
 
@@ -225,7 +243,7 @@ cd ../cover_letters && xelatex -interaction=nonstopmode cover_<company>_<role>.t
 - **Stock cover letter** uses **xelatex** — cover.cls requires fontspec.
 - **Custom template active:** run its declared `<CV_COMPILE>`/`<COVER_COMPILE>` command instead, substituting the actual filename for `<file>`. Never fall back to lualatex/xelatex when a custom template's compile command is a different toolchain (e.g. `typst compile`) — that command is what the manifest actually verified in `/add-template` Step 4.
 
-If either compile fails, fix the error and re-compile until clean.
+If either compile fails, fix the error and re-compile until clean. Automated generation must return failure without recording an application or publishing PDF links unless both compiles succeed and the CV/letter page counts are exactly 2/1; an old PDF at the output path is not evidence of a successful new build.
 
 ### 5b. Inspect layout
 
@@ -244,18 +262,21 @@ If Poppler is missing, or the `pdftotext` first in PATH is the xpdf build Git fo
 
 The thresholds are calibrated for the stock moderncv and `cover.cls` geometry; a template registered via `/add-template` may report a phantom hole above a footer the 90pt band does not cover.
 
-Then read both PDFs via the Read tool and verify:
+Then visually inspect every page of both compiled PDFs:
 
 **CV (`cv/main_<company>_<role>.pdf`):**
 - [ ] Exactly 2 pages (not 1, not 3)
-- [ ] No orphaned `\cventry` titles — a job/education title line must never sit alone at the bottom of page 1 with its bullets on page 2. This is the most common failure.
-- [ ] Section headings are not isolated at the top of page 2 with only 1-2 lines below
-- [ ] No awkward whitespace gaps
+- [ ] Zero clipping, line overlaps, or unreadable fonts
+- [ ] No orphaned headings or split `\cventry` entries across page breaks (`\needspace`)
+- [ ] Balanced content distribution across both pages without filler, excessive whitespace, or unreadably small font
+- [ ] No awkward word hyphenation or line breaks
 
 **Cover letter (`cover_letters/cover_<company>_<role>.pdf`):**
-- [ ] Exactly 1 page
+- [ ] Exactly 1 page (header, recipient, date, subject, body, closing, and signature must all fit on 1 page)
+- [ ] Zero overflow onto a second page
 - [ ] Signature block visible, not cut off or pushed to a second page
-- [ ] Bullet list font matches surrounding body text (both should be Raleway-Medium)
+- [ ] Spacing between header, recipient, date, subject, and body is compact and consistent
+- [ ] Bullet list font matches surrounding body text (Raleway-Medium)
 
 ### 5c. Iterate until clean
 
@@ -271,17 +292,18 @@ Do not proceed to Step 6 until both PDFs pass inspection.
 
 ### 5d. ATS & keyword verification (CV)
 
-An ATS parser reads the PDF's embedded **text layer**, not the rendered page — a CV that passed visual inspection can still extract as garbage (icon glyphs where the contact details should be, scrambled reading order in multi-column layouts). This step verifies what a parser actually sees. It applies to the **CV only**; cover letters rarely go through keyword screening.
+An ATS parser reads the PDF's embedded **text layer**, not the rendered page — a CV that passed visual inspection can still extract as garbage (icon glyphs where the contact details should be, scrambled reading order in multi-column layouts). This step verifies what a parser actually sees. Keyword screening applies to the CV; extract both documents for the text-integrity and content checks in `CLAUDE.md`.
 
 **Availability check:** extract with `python tools/verify_pdf.py` (tries **pypdf** first — BSD, `pip install pypdf` — then Poppler `pdftotext`). If both are missing, print a one-line warning that the mechanical parse check is skipped, do the keyword-coverage check (item 3 below) against your visual Read of the PDF instead, and note the degraded mode in the Step 6 report. Same graceful-skip pattern as the salary lookup. If a documented fallback still shells out to `pdftotext -layout`, keep the `-enc UTF-8` flag: Xpdf-based builds default to Latin-1 output, and without it a correct non-ASCII CV fails the replacement-character check below.
 
 **1. Extract the text layer:**
 
 ```bash
-python tools/verify_pdf.py cv/main_<company>_<role>.pdf --dump-text cv/main_<company>_<role>.txt
+python tools/verify_pdf.py cv/main_<company>_<role>.pdf --pages 2 --dump-text cv/main_<company>_<role>.txt
+python tools/verify_pdf.py cover_letters/cover_<company>_<role>.pdf --pages 1 --dump-text cover_letters/cover_<company>_<role>.txt
 ```
 
-The command prints `extractor: pypdf` or `extractor: pdftotext`. Record that name in the Step 6 report. Read the `.txt` file. If that tool is unavailable, the Poppler fallback is:
+The command prints `extractor: pypdf` or `extractor: pdftotext`. Record that name in the Step 6 report. Read both `.txt` files against the final checks in `CLAUDE.md`. If that tool is unavailable, the Poppler fallback is:
 
 ```bash
 cd cv && pdftotext -layout -enc UTF-8 main_<company>_<role>.pdf main_<company>_<role>.txt
@@ -311,7 +333,7 @@ Failures here are template-level problems: fix them in the `<CV_EXT>` source (e.
 > **Note:** A multi-word phrase reported missing may be a punctuation-spacing artifact between extractors (pypdf sometimes inserts spaces around punctuation that Poppler does not). Re-check against the other extractor before concluding the text is absent.
 
 
-**4. Clean up:** delete the extracted `.txt` file.
+**4. Clean up:** delete both extracted `.txt` files.
 
 ### 5e. Clean up build artifacts
 
@@ -321,24 +343,40 @@ After the final clean compile, delete intermediate build files the compile comma
 
 ## Step 6: Present Final Output
 
-Run the full verification checklist from `CLAUDE.md` now — this is the **only** verification pass in the workflow. Re-read both files once here to verify final state on disk matches your mental model after the Step 4 and Step 5 edits.
+**Delivery gate for every entry point, including dashboard generation:** compilation and correct page counts are necessary, not sufficient. Complete the visual, text-extraction and content checks in `CLAUDE.md` before calling an application verified or ready. Automated checks cannot substitute for factual and role-targeting review. If a required check fails or has not run, report the failure/pending review explicitly and do not report overall verification success. & Delivery Report
 
-### Verification Checklist
-Report pass/fail for each item in the CLAUDE.md verification checklist (factual accuracy, targeting, consistency, quality).
+Run the full verification checklist now. Re-read both files once here to verify final state on disk matches your mental model after the Step 4 and Step 5 edits.
 
-### Key Tailoring Decisions
-Summarize 3-5 key decisions made to tailor the application:
-- What was emphasized and why
-- What company-specific angles were incorporated
-- What the reviewer suggested that was most impactful
-- Any gaps that were acknowledged or reframed
+### Verification & Quality Confirmation
+Confirm the following before presenting:
+- [ ] Compiled PDF page counts: CV = **exactly 2 pages**; Cover Letter = **exactly 1 page**. If either count is incorrect, revise, recompile, and inspect again before delivery.
+- [ ] Left-aligned, ragged-right text used for CV summaries, skills, and bullets; zero stretched spacing from full justification while preserving date/location alignment.
+- [ ] For every role and application type, write a summary of exactly 4 rendered lines covering relevant background, strongest supported role-specific skills, and how they connect to the particular job responsibilities. Check the compiled PDF, not source lines. Enrollment, expected graduation, availability placement, and restrictions on repeating experience achievements are not summary requirements.
+- [ ] Project titles formatted as standalone bold text without leading bullet glyphs; 1–2 concise standard bullets underneath with consistent indentation; zero custom bullet glyphs that extract incorrectly.
+- [ ] Core emphasized tools (e.g., Python) explicitly present in Technical Skills.
+- [ ] For student applications, university enrollment and expected graduation visible on Page 1; confirmed weekly hours and start date included where appropriate; zero invented details.
+- [ ] Cover letter rewritten around role's actual stated responsibilities; zero generic praise; zero bullets duplicating opening or other examples.
+- [ ] Cover letter opening limited to 2–3 concise sentences; states role once and connects relevant experience directly to the work.
+- [ ] Confirmed availability details stated; no "contribute immediately" when recorded start date is later.
+- [ ] Matching CV and cover letter font families and restrained visual styling; excessive space between recipient block and date reduced.
+- [ ] Visual inspection of every page confirms zero clipping, overlaps, orphaned headings (`\needspace`), split entries, uneven spacing, awkward word breaks ("techni-cal", "environ-ments"), or cover letter overflow.
+- [ ] Text-layer extraction confirms logical reading order, complete contact details, correct standard bullets, no encoding artifacts (`(cid:NNN)`), and natural keyword coverage without stuffing.
+- [ ] Cross-document consistency verified between CV, cover letter, and candidate profile.
+- [ ] Do not claim an arbitrary ATS score or guarantee an interview; distinguish verified PDF readability from an employer's unknown screening process.
+
+### Delivery Summary
+Provide the final CV and cover-letter PDFs alongside their editable source files, and briefly summarize:
+1. **Dynamic Tailoring:** How the application was tailored (how projects, skill categories, and experience bullets were selected and ordered by relevance to the job).
+2. **Layout Improvements:** What layout adjustments were made (e.g. geometry, `\needspace`, balancing across pages).
+3. **Verification Checks Passed:** Confirmation that visual and text-extraction checks passed and exact page counts were confirmed.
+4. **Remaining User Information:** Any remaining details the candidate needs to supply.
 
 ### Files Created
-List the files written:
-- `cv/main_<company>_<role><CV_EXT>`
-- `cover_letters/cover_<company>_<role><COVER_EXT>`
+List the files generated:
+- `cv/YashwanthGotike_<company>_CV.pdf` (source: `cv/YashwanthGotike_<company>_CV.tex`)
+- `cover_letters/YashwanthGotike_<company>_CoverLetter.pdf` (source: `cover_letters/YashwanthGotike_<company>_CoverLetter.tex`)
 
-Tell the user: "Both files are ready for your review. Open them to check the final output before compiling."
+Tell the user: "Both documents are ready for your review. Preparing the documents does not authorize submitting the application."
 
 ### Step 6b: Record the Application
 

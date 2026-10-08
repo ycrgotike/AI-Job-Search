@@ -40,6 +40,7 @@ export async function runDetail(opts: DetailOpts): Promise<number> {
         job.jobFunction ? `Function: ${job.jobFunction}` : "",
         job.industries ? `Industries: ${job.industries}` : "",
         `Status: ${job.isActive ? "ACTIVE" : "CLOSED / EXPIRED"}`,
+        job.easyApply !== undefined ? `Easy Apply: ${job.easyApply ? "YES" : "NO"}` : "",
         "",
         job.description || "(no description)",
         "",

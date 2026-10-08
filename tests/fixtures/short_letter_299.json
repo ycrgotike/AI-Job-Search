@@ -1,0 +1,29 @@
+{
+  "opening": "I am applying for the Praktikant:in als LLM /RAG & Machine Learning Engineer position at U-Glow GmbH. My Python, RAG and API project experience provides a foundation for building agent-based features that connect reliable AI behaviour with product workflows and existing backend services.",
+  "blocks": [
+    [
+      "Agent workflows and API integration",
+      "In my MVP UPSC project, I architected an end-to-end intelligent assistant utilizing LLMs, Retrieval-Augmented Generation (RAG), vector databases (embeddings, similarity indexing), and Agentic AI workflows for automated evaluation and deep synthesis. I implemented multi-agent reasoning, semantic search over complex syllabi/documents, and production-grade REST APIs. I would use this project experience to test retrieval quality, examine responses against source material and document application limitations before relying on generated outputs in product workflows."
+    ],
+    [
+      "Machine Learning Operations & Deployment",
+      "In my Kidney Disease Classification project, I implemented a full MLOps pipeline with MLflow for experiment tracking, DVC for data versioning, and Flask REST API for model serving, deployed via CI/CD on AWS."
+    ]
+  ],
+  "interest": "For these product workflows, I would agree expected outputs and failure cases with product and engineering teams. For developing LLM applications and retrieval workflows, I would agree the expected outputs and review criteria with the team before making changes. I would compare results with source information, record unresolved questions and make the reasoning behind proposed changes clear to the colleagues reviewing the work. I would use feedback from the people relying on these outputs to decide which improvements need attention first and how to verify their effect.",
+  "company": "U-Glow GmbH",
+  "title": "Praktikant:in als LLM /RAG & Machine Learning Engineer (m/w/d)",
+  "description": "Build RAG applications.",
+  "plan": {
+    "responsibilities": [
+      {
+        "kind": "agents",
+        "responsibility": "developing LLM applications and retrieval workflows",
+        "source": "Build RAG applications.",
+        "family": "ai"
+      }
+    ],
+    "all_responsibilities": []
+  },
+  "count": 299
+}

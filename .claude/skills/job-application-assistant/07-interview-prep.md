@@ -1,5 +1,5 @@
 ---
-framework_version: 1.0.0
+framework_version: 1.0.1
 ---
 
 # Interview Preparation Guide
@@ -14,47 +14,44 @@ Keep answers to 1-2 minutes. Be specific. End with what you learned or would do 
 
 ## Ready-Made STAR Examples
 
-<!-- These are populated by /setup from your actual experience. Below are templates showing the format. -->
+### 1. Customer Retention Lift & BI Automation (SolTech InfoLabs — Data Analytics & Experimentation)
+**S:** SolTech faced fluctuating user churn across key product lines with unclear visibility into what drove drop-offs across 3M+ transaction records.
+**T:** Perform deep exploratory data analysis, design statistical hypothesis tests, and automate business intelligence reporting.
+**A:** Analyzed 3M+ records with Python and SQL. Conducted cohort analyses and A/B testing across features. Developed automated Power BI dashboards using complex DAX measures, replacing manual Excel reporting.
+**R:** Boosted customer retention by 18% through data-driven recommendations, cut reporting generation time by 40%, and reduced turnaround from 3 days to 1 day.
+**Use for:** "Tell me about a time data drove business impact", "Experience with A/B testing and experimentation", "Power BI / DAX / SQL at scale".
 
-### 1. [PROJECT_NAME] ([SKILL_DEMONSTRATED])
-**S:** [CONTEXT - what was happening, what was the problem]
-**T:** [YOUR RESPONSIBILITY - what you specifically needed to do]
-**A:** [WHAT YOU DID - specific actions, tools, methods]
-**R:** [OUTCOME - measurable results, adoption, impact]
-**Use for:** "[QUESTION_TYPE_1]", "[QUESTION_TYPE_2]"
+### 2. Cloud Migration & Latency Reduction (G.S.R Educational Institutions — Data Engineering)
+**S:** Academic and LMS data was siloed across legacy relational databases, causing report generation batch jobs to take over 24 hours.
+**T:** Architect a centralized cloud data warehouse and consolidate disparate sources with high-throughput ETL/ELT pipelines.
+**A:** Built Azure Data Factory pipelines with Python; migrated ~1.5 TB of data to cloud storage; designed dimensional star schemas; set up CI/CD deployments for Azure Databricks with GitHub Actions.
+**R:** Slashed data latency from 24+ hours to sub-30-minute cycles, optimized query performance, and lowered cloud infrastructure overhead by 30%.
+**Use for:** "Major data engineering or migration experience", "Cloud cost and query optimization", "Azure, Spark, Databricks, CI/CD".
 
-### 2. [PROJECT_NAME] ([SKILL_DEMONSTRATED])
-**S:** [CONTEXT]
-**T:** [YOUR RESPONSIBILITY]
-**A:** [WHAT YOU DID]
-**R:** [OUTCOME]
-**Use for:** "[QUESTION_TYPE_1]", "[QUESTION_TYPE_2]"
+### 3. Intelligent Assistant & RAG Pipeline (MVP UPSC — GenAI, LLM & Agentic AI)
+**S:** Complex syllabus materials and disparate document corpuses required accurate, hallucination-free factual retrieval and automated evaluation.
+**T:** Architect an end-to-end intelligent assistant utilizing LLMs, RAG, and vector databases.
+**A:** Built a modular pipeline using Python, LangChain/LlamaIndex, and vector databases for semantic chunking and embedding indexing; implemented agentic multi-step reasoning to verify outputs against source text.
+**R:** Delivered high-accuracy contextual answers with transparent citations, demonstrating production-grade GenAI architecture.
+**Use for:** "Experience with GenAI, LLMs, and RAG", "Vector databases and embeddings", "Agentic AI workflows and pair programming".
 
-### 3. [PROJECT_NAME] ([SKILL_DEMONSTRATED])
-**S:** [CONTEXT]
-**T:** [YOUR RESPONSIBILITY]
-**A:** [WHAT YOU DID]
-**R:** [OUTCOME]
-**Use for:** "[QUESTION_TYPE_1]", "[QUESTION_TYPE_2]"
-
-<!-- Add more STAR examples as needed. Aim for 4-6 covering different competencies. -->
+### 4. Quantitative Financial Streaming Pipeline (Algo Trading Platform)
+**S:** Quantitative trading strategies needed rapid ingestion of financial time-series and automated backtesting against historical drawdowns.
+**T:** Develop an automated pipeline for live market data extraction, feature engineering, and strategy evaluation.
+**A:** Engineered Python-based pipelines (Pandas, NumPy) to calculate volatility, momentum, and technical indicators; built automated backtesting reporting with risk metrics (Sharpe ratio, max drawdown).
+**R:** Automated data ingestion to execution signaling with zero manual latency.
+**Use for:** "Time-series processing", "Building complex automated pipelines from scratch", "Statistical modeling".
 
 ## Common Tough Questions
 
-### "Why did you leave [previous company]?"
-> [PREPARE YOUR ANSWER - be honest, forward-looking, no negativity about former employer]
+### "Why are you looking for a role in Germany right now?"
+> "After building 5+ years of production experience in data engineering and analytics in India—delivering 30% cost savings and 40% BI efficiency—I relocated to Germany to pursue my M.Sc. in Web & Data Science at the University of Koblenz. I am eager to apply my strong engineering foundation and advanced GenAI/ML skills to a high-impact team here in Germany."
 
-### "You don't have [specific skill/experience]."
-> [PREPARE YOUR ANSWER - acknowledge the gap, bridge to adjacent experience, show willingness to learn]
+### "You are currently enrolled in a Master's degree; what is your availability?"
+> "My academic schedule at the University of Koblenz is flexible and modular. I am fully authorized to work in Germany and can start a full-time role within 1 month from application date. I am equally open to working student (Werkstudent) or internship roles leading toward my master thesis."
 
-### "Where do you see yourself in 5 years?"
-> [PREPARE YOUR ANSWER - show ambition aligned with the role's growth path]
-
-### "What's your biggest weakness?"
-> [PREPARE YOUR ANSWER - genuine weakness with concrete mitigation strategy]
-
-### "Why this company specifically?"
-> Customize per company. Must reference: specific projects, company values, market position, or team structure. Never give a generic answer.
+### "What is your experience with modern GenAI and Agentic workflows?"
+> "Beyond traditional ML/DL (TensorFlow, PyTorch, MLOps), I actively build LLM applications using RAG, vector embeddings, and agentic workflows—such as my MVP UPSC project and automated data pipelines. I leverage modern AI coding assistants (like Google Antigravity) to accelerate high-quality software development."
 
 ## Questions You Should Ask Interviewers
 

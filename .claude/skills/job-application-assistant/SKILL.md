@@ -5,7 +5,7 @@ description: >
   and preparing for interviews. Triggers on keywords like: job posting, job application, CV,
   cover letter, resume, interview prep, job fit, career, application, apply, ansøgning, stilling
 allowed-tools: Read, Glob, Grep, WebFetch, WebSearch, Bash, Edit, Write, AskUserQuestion
-framework_version: 1.3.4
+framework_version: 1.3.7
 ---
 
 # Job Application Assistant
@@ -76,3 +76,7 @@ The user may also ask for individual steps without the full workflow:
 - "Write a cover letter for [role] at [company]" - Step 3 only
 - "Help me prepare for an interview at [company]" - Step 4 only
 - "What jobs should I look for?" - Career strategy discussion using profile + evaluation framework
+
+## Optional Gemini drafting in the dashboard
+
+The dashboard and Python generator can use Gemini for description-based drafting when `APPLICATION_LLM_PROVIDER=gemini` is configured in the root `.env` or server environment. See `GEMINI_SETUP.md` for configuration and data handling. Gemini receives the posting, candidate evidence and canonical writing references; it returns plain structured content. Existing templates, page-count, summary-line and text-extraction checks still apply. Experience bullet selections retain their canonical text. Before drafting, Gemini builds a source-linked plan of substantive duties, evidence, project priorities, qualification gaps and employer timing. The final model-assisted review checks factual accuracy, skill relevance and quoted coverage of every primary duty. Preserve all substantive reviewer concerns; never suppress them using keyword filters. After two repair opportunities, preserve unresolved non-factual recommendations as explicit quality warnings rather than blocking indefinitely. Primary-duty coverage and a separate focused factual audit remain mandatory. Confirmed qualifications do not imply a perfect match. Marketing slogans are not start dates, future contributions are not past employment claims, and availability calculated from the candidate policy is authoritative context for review. Repair letter-length failures without rewriting already accepted CV content. Use reviewed summary alternatives for four-line fitting without generic filler. Generated prose receives this model-assisted review, which does not replace the final human/agent visual and factual review above. API or validation errors are explicit; there is no silent fallback to rules-based generation.

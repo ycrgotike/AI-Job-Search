@@ -1,90 +1,115 @@
 # Search Queries for Job Scraper
 
-<!-- SETUP: Customize these queries based on your skills, target roles, and location -->
-
 ## Installed portal CLIs (primary for `/scrape`)
 
-`/scrape` discovers every portal skill under `.agents/skills/*/SKILL.md` and runs its CLI first. Shipped country-agnostic CLIs include `linkedin-search` and `freehire-search`; Danish demos and any skill you add with `/add-portal` are included the same way. You do **not** need a matching `site:` line below for those CLIs to run.
+`/scrape` discovers every portal skill under `.agents/skills/*/SKILL.md` and runs its CLI first. Installed portal CLIs include:
+- `linkedin-search`: LinkedIn job search across Germany / global
+- `freehire-search`: Tech-focused aggregator API
+- `arbeitsagentur-search`: Official Bundesagentur für Arbeit (BA) Jobsuche REST API across all of Germany
+- `stepstone-search`: StepStone Germany (`stepstone.de`) with verified publication dates & Schema.org metadata
+- `xing-search`: XING DACH (`xing.com` / `xing.de`) professional network job postings
 
 The `site:` query templates in this file are the **WebSearch fallback** — for portals without a CLI, company career pages, or when a CLI fails.
 
-**Language scope:** write every query category in every language listed in your CLAUDE.md Languages table (typically 1-2, sometimes more). A posting requiring a language you have *not* declared, as a job condition, is excluded before scoring; a posting requiring a *higher level* than you declared in a language you *do* work in is flagged for your own judgment, not excluded — see `04-job-evaluation.md`'s Language Gate, the single source of truth for this rule. Translate each category's keywords rather than machine-translating word-for-word (e.g. "Frontend Developer" -> "Desarrollador Frontend", not a literal word-for-word translation) if you work in more than one language.
+**Language scope:** German & English are declared languages. Both English and German job postings across Germany are target candidates (excluding roles requiring minimum German C1/C2).
 
-## Search Sites
+## Search Sites & Portals
 
-Primary (your market's job boards - scaffold one with `/add-portal`):
-- **[YOUR_JOB_BOARD]** - your market's largest general job board
-- **linkedin.com/jobs** - LinkedIn job listings (filter: [YOUR_COUNTRY] / [YOUR_CITY]); also covered by `linkedin-search` CLI
-- **[YOUR_INDUSTRY_JOB_BOARD]** - a niche/industry board for your field (optional)
-- **[YOUR_ADDITIONAL_JOB_BOARD]** - another major board for your market (optional)
+Primary (German tech & general job boards):
+- **arbeitsagentur.de** - Official German Federal Employment Agency portal (`arbeitsagentur-search` CLI)
+- **stepstone.de** - Major German job portal for engineering and analytics (`stepstone-search` CLI)
+- **xing.de / xing.com** - Leading professional network in Germany/DACH (`xing-search` CLI)
+- **linkedin.com/jobs** - LinkedIn job listings (`linkedin-search` CLI)
+- **freehire.me** - Multi-market aggregator for tech & engineering roles (`freehire-search` CLI)
+- **indeed.de** - General board covering full-time and Werkstudent positions in Germany
 
 Secondary (company career pages via Google):
-- Direct Google searches with `site:` filters for known target companies
+- Direct Google searches with `site:` filters for enterprise and high-growth data teams
+
+## Dashboard default searches
+
+The dashboard always runs the core and student suites defined in `tools/scrape.py` (`CORE_QUERIES` and `STUDENT_QUERIES`). They include English/German data, AI/ML, KI, data management and BI variants. The optional query box adds a search instead of replacing these defaults; duplicate terms are searched once. The result limit applies per portal per search term. Existing recency, language and job deduplication filters still apply. CLI `-q` remains a focused search; `--all -q` adds it to the suite.
 
 ## Query Categories
 
-Queries are grouped by priority. Write **each category in every language from your Languages table** (see Language scope above). Combine each query with your location terms (e.g. your city, region, or metro area) where the site supports it.
+Queries are grouped by priority and tailored to Germany-wide data and AI roles across English and German.
 
-**Organize by function, not job title.** The same underlying work carries different titles across companies and markets (a "Data Scientist" role at one employer may be posted as "Insights Analyst" or "Data Consultant" at another). Name each priority category after the function it covers, and list several plausible job titles as query variants within that category rather than betting an entire priority tier on one exact title string.
+### Priority 1: Data Engineering & Analytics (Core Focus)
 
-### Priority 1: [YOUR_PRIMARY_ROLE_TYPE]
-
-These match your strongest and most desired career direction.
+These match your 5+ years of production experience in scalable ETL/ELT pipelines, cloud data warehouses, and BI.
 
 ```
-site:[YOUR_JOB_BOARD] "[YOUR_PRIMARY_JOB_TITLE_1]" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_PRIMARY_JOB_TITLE_2]" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_KEY_SKILL]" [YOUR_CITY]
-site:linkedin.com/jobs "[YOUR_PRIMARY_JOB_TITLE_1]" [YOUR_COUNTRY]
+site:stepstone.de "Data Engineer" Germany
+site:stepstone.de "Data Analyst" Germany
+site:stepstone.de "Azure Data Factory" OR "Databricks" Germany
+site:linkedin.com/jobs "Data Engineer" Germany
+site:linkedin.com/jobs "Data Analyst" Germany
+site:linkedin.com/jobs "Power BI" DAX Germany
+site:stepstone.de "BI Analyst" OR "Business Intelligence Analyst" Germany
 ```
 
-### Priority 2: [YOUR_DOMAIN_EXPERTISE]
+### Priority 2: AI / ML & GenAI / Data Science
 
-These match your domain expertise.
-
-```
-site:[YOUR_JOB_BOARD] [YOUR_DOMAIN_KEYWORD_1] [YOUR_CITY] OR [YOUR_REGION]
-site:[YOUR_JOB_BOARD] [YOUR_DOMAIN_KEYWORD_2] [YOUR_COUNTRY]
-site:linkedin.com/jobs [YOUR_DOMAIN_KEYWORD_1] [YOUR_CITY] [YOUR_COUNTRY]
-```
-
-### Priority 3: [YOUR_ADJACENT_ROLE_TYPE]
-
-Adjacent roles you could pivot into.
+These match your advanced competencies in MLOps, LLMs, RAG architectures, and predictive modeling.
 
 ```
-site:[YOUR_JOB_BOARD] "[YOUR_ADJACENT_TITLE_1]" [YOUR_KEY_SKILL] [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "[YOUR_ADJACENT_TITLE_2]" [YOUR_KEY_SKILL] [YOUR_CITY]
+site:stepstone.de "AI Engineer" Germany
+site:stepstone.de "Machine Learning Engineer" Germany
+site:stepstone.de "Data Scientist" Germany
+site:linkedin.com/jobs "GenAI" OR "LLM" OR "RAG" Germany
+site:linkedin.com/jobs "MLOps" OR "Machine Learning Engineer" Germany
+site:stepstone.de "Data Science" Python Germany
 ```
 
-### Priority 4: Broader Technical / Consulting
+### Priority 3: Working Student & Trainee Positions (Werkstudent / Praktikum)
 
-Wider net for general technical roles.
+Roles aligned with current master's studies at University of Koblenz (expected graduation Sept 2027).
 
 ```
-site:[YOUR_JOB_BOARD] [YOUR_KEY_SKILL] developer [YOUR_CITY]
-site:linkedin.com/jobs "[YOUR_KEY_SKILL] developer" [YOUR_CITY]
-site:[YOUR_JOB_BOARD] "technical consultant" [YOUR_DOMAIN] [YOUR_CITY]
+site:stepstone.de "Werkstudent Data Engineer" Germany
+site:stepstone.de "Werkstudent Data Analyst" Germany
+site:stepstone.de "Werkstudent Data Science" Germany
+site:linkedin.com/jobs "Werkstudent" "Data" Germany
+site:linkedin.com/jobs "Working Student Data Engineer" Germany
+```
+
+### Priority 4: Business Analytics & Solutions
+
+Wider net for cross-functional data and business analytics positions.
+
+```
+site:stepstone.de "Business Analyst" Data Germany
+site:linkedin.com/jobs "Analytics Engineer" Germany
+site:stepstone.de "Analytics Consultant" Germany
 ```
 
 ## Location Filter
 
-When evaluating results, verify the job location is within reasonable commute distance from your home. Define acceptable areas:
-- [YOUR_CITY] and surrounding areas
-- [ACCEPTABLE_AREA_1]
-- [ACCEPTABLE_AREA_2]
-- [BORDERLINE_AREA] (borderline - ~X min by transit)
-- [TOO_FAR_AREA] (too far)
+- **Primary Commute / Local**: Koblenz, Bonn, Cologne, Frankfurt am Main, Mainz, Wiesbaden
+- **Willing to Relocate (Germany-wide)**: Berlin, Munich, Hamburg, Stuttgart, Düsseldorf, Nuremberg, Leipzig, and across Germany
+- **Remote / Hybrid**: Germany-wide (proven 2 years remote/hybrid track record)
+- **Too Far**: Strictly on-site roles outside Germany without remote flexibility
 
 ## Language Filter
 
-Your working languages and levels are in CLAUDE.md's Languages table. When filtering scraped results, apply `04-job-evaluation.md`'s Language Gate: a posting requiring a language you haven't declared at all is excluded; a posting requiring a higher level than you declared in a language you do work in is not excluded, flag it clearly instead (see `job-scraper/SKILL.md`'s Step 3 "Quick Fit Assessment" for how the flag surfaces in `/scrape` output). Postings simply *written* in a language you don't work in, that don't require it on the job, are fine.
+- English: C1 (Fluent - full professional working proficiency)
+- German: B2 (Intermediate - professional and conversational)
+- Postings requiring English or German (up to B2) are accepted.
+- **Strict Exclusion (German C1 Gate):** Postings requiring minimum German C1, C2, verhandlungssicher, or native German are strictly excluded from scraping. Postings requiring additional languages not declared (e.g. French, Spanish) are excluded by the Language Gate.
 
 ## Date Filter
 
-Only include jobs posted within the last 14 days, or with an application deadline that has not yet passed. If a posting date cannot be determined, include it but flag as "date unknown".
+Only include jobs posted within the last 2 days (max 2 days / 48 hours old), or with an application deadline that has not yet passed.
 
 ## Adapting Queries
 
-If the user specifies a focus area, select queries from the matching category and also generate 2-3 custom queries for that focus. For example:
-- "/scrape [focus_area]" -> relevant category queries + custom focus-specific queries
+When the user specifies a focus area (e.g. `/scrape genai` or `/scrape werkstudent`), prioritize queries from the matching category and run CLI search queries targeting Germany.
+
+## Coverage safeguards
+
+- Include thesis/Abschlussarbeit and AI student queries in the default suite.
+- Retain the strict two-day cutoff; fetch a broader portal date bucket when needed and filter exact publication dates locally.
+- Paginate supported adapters up to bounded limits. XING currently supports only its first page and must report limited coverage.
+- Persist per-query/per-portal counts and failures in `job_scraper/last_scrape_report.json`. A capped or failed search is not exhaustive coverage.
+- Save results after each query with atomic replacement; allow only one scraper process to write at a time.
+- Retry transient search failures once; retain earlier successful pages. Dashboard warnings must expose incomplete coverage.

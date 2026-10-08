@@ -1,0 +1,25 @@
+{
+  "opening": "I am applying for the Werkstudent AI & Analytics position at Speira. As a Master's student in Web and Data Science, I would draw on my experience with Python, SQL and application integration to support your work in developing applications and integrating workflows.",
+  "blocks": [
+    [
+      "Application Modernization & Workflow Integration",
+      "At ITC Infotech, I built a cloud-native inspection request application using OutSystems, replacing legacy systems via REST API and .NET integration with automated request routing and CI/CD deployment. I would apply this experience to understanding user needs, tracing interfaces and testing changes against the workflow they support to maintain high software quality and availability."
+    ]
+  ],
+  "interest": "I would clarify user workflows and interface contracts before implementing changes. I would agree acceptance criteria, test expected behaviour and failure cases, and document deployment and recovery steps with the team so application updates can be reviewed and maintained consistently. For developing applications and integrating workflows, I would agree the expected outputs and review criteria with the team before making changes. I would compare results with source information, record unresolved questions and make the reasoning behind proposed changes clear to the colleagues reviewing the work. I would use feedback from the people relying on these outputs to decide which improvements need attention first and how to verify their effect. I would verify interface behaviour against agreed acceptance criteria before release.",
+  "company": "Speira",
+  "title": "Werkstudent (m/w/d) AI & Analytics",
+  "description": "Support business applications.",
+  "plan": {
+    "responsibilities": [
+      {
+        "kind": "software",
+        "responsibility": "developing applications and integrating workflows",
+        "source": "Develop business applications.",
+        "family": "data"
+      }
+    ],
+    "all_responsibilities": []
+  },
+  "count": 295
+}
