@@ -92,7 +92,7 @@ cd ai-job-search
 PowerShell:
 
 ```powershell
-$tools = @("jobbank-search", "jobdanmark-search", "jobindex-search", "jobnet-search", "linkedin-search", "freehire-search")
+$tools = @("arbeitsagentur-search", "stepstone-search", "xing-search", "linkedin-search", "freehire-search", "jobbank-search", "jobdanmark-search", "jobindex-search", "jobnet-search")
 foreach ($tool in $tools) {
   Push-Location ".agents/skills/$tool/cli"
   bun install
@@ -103,14 +103,22 @@ foreach ($tool in $tools) {
 Bash / zsh / Git Bash:
 
 ```bash
-for tool in jobbank-search jobdanmark-search jobindex-search jobnet-search linkedin-search freehire-search; do
+for tool in arbeitsagentur-search stepstone-search xing-search linkedin-search freehire-search jobbank-search jobdanmark-search jobindex-search jobnet-search; do
   (cd .agents/skills/$tool/cli && bun install)
 done
 ```
 
-For `linkedin-search` and `freehire-search` the install is optional: both have zero runtime dependencies and run with plain `bun`; `bun install` only pulls TypeScript dev types.
+### 3. Launch the Web Application Dashboard
 
-### 3. Set up your profile
+Launch the browser-based dashboard to manage job searches, inspect live listings, and generate tailored applications:
+
+```bash
+./app
+# or run the server directly:
+python3 server.py 8000
+```
+
+### 4. Set up your profile
 
 ```bash
 claude
@@ -120,7 +128,7 @@ claude
 
 `/setup` offers three paths: read your `documents/` folder if you have one populated (CV PDF, LinkedIn export, diplomas, reference letters, past applications), import a single CV pasted in chat, or walk through an interview. It auto-detects what you have and asks. Documents-folder mode is idempotent and safe to re-run as you add more material; see `documents/README.md` for the layout.
 
-### 4. Search for jobs
+### 5. Search for jobs
 
 ```bash
 /scrape
@@ -128,7 +136,7 @@ claude
 
 This searches multiple job portals for positions matching your profile, deduplicates results, and presents them sorted by fit. Pick a match to run `/apply` on it directly — or, when a scrape returns more jobs than you want to eyeball, run `/rank` to batch-score them all against the fit framework and get a ranked shortlist first.
 
-### 5. Apply to a job
+### 6. Apply to a job
 
 ```bash
 /apply https://jobindex.dk/job/1234567
