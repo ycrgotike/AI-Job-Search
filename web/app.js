@@ -22,7 +22,7 @@ function normalizePortalKey(portal) {
   if (s.includes('arbeitsagentur') || s.includes('arbeitsamt') || s.includes('bundesagentur')) return 'arbeitsagentur';
   if (s.includes('freehire') || s.includes('whatjobs') || s.includes('4dayweek')) return 'freehire';
   if (s.includes('xing')) return 'xing';
-  return s.replace(/-search$/, '');
+  return 'other';
 }
 
 function formatPortalName(portal) {
@@ -178,13 +178,13 @@ function updateFilterCounts() {
     statTodayJobs.textContent = todayCount > 0 ? todayCount : yesterdayCount;
     const todayLabel = document.getElementById('stat-today-label');
     if (todayLabel) {
-      todayLabel.textContent = todayCount > 0 ? '⚡ Posted Today' : '⚡ Posted Yesterday (Oct 2)';
+      todayLabel.textContent = todayCount > 0 ? 'Posted today' : 'Posted yesterday';
     }
     const todayDesc = document.getElementById('stat-today-desc');
     if (todayDesc) {
       todayDesc.textContent = todayCount > 0
-        ? `${todayCount} freshly posted today · ${yesterdayCount} yesterday`
-        : `${yesterdayCount} fresh opportunities from Oct 2 · Click to view`;
+        ? `${todayCount} today · ${yesterdayCount} yesterday`
+        : `${yesterdayCount} yesterday · Click to view`;
     }
   }
 
@@ -198,10 +198,9 @@ function updateFilterCounts() {
     xing: 0
   };
   allJobs.forEach(j => {
-    const key = normalizePortalKey(j.portal);
-    if (portalCounts[key] !== undefined) {
-      portalCounts[key]++;
-    }
+    jobPortalKeys(j).forEach(key => {
+      if (portalCounts[key] !== undefined) portalCounts[key]++;
+    });
   });
 
   const cAll = document.getElementById('count-portal-all');
@@ -239,10 +238,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadData() {
   try {
+    const readResponse = async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Dashboard data could not be loaded.');
+      return data;
+    };
     const [jobsRes, trackerRes, statsRes] = await Promise.all([
-      fetch('/api/jobs').then(r => r.json()),
-      fetch('/api/tracker').then(r => r.json()),
-      fetch('/api/stats').then(r => r.json())
+      fetch('/api/jobs').then(readResponse),
+      fetch('/api/tracker').then(readResponse),
+      fetch('/api/stats').then(readResponse)
     ]);
 
     allJobs = jobsRes;
@@ -252,7 +256,7 @@ async function loadData() {
     renderJobs();
     renderTracker();
   } catch (err) {
-    showToast('Failed to load dashboard data. Ensure server is running.', 'error');
+    showToast('Failed to load dashboard data: ' + err.message, 'error');
     console.error(err);
   }
 }
@@ -262,34 +266,18 @@ function updateStats(stats) {
   if (stats.today) {
     serverToday = stats.today;
   }
-  statTotalJobs.textContent = stats.stored_jobs ?? stats.total_jobs ?? 0;
+  statTotalJobs.textContent = stats.total_jobs ?? 0;
   if (statTodayJobs) {
     const todayCount = stats.posted_today ?? allJobs.filter(isJobToday).length;
     const yCount = stats.posted_yesterday ?? allJobs.filter(isJobYesterday).length;
-    statTodayJobs.textContent = todayCount > 0 ? todayCount : yCount;
-    const todayLabel = document.getElementById('stat-today-label');
-    if (todayLabel) {
-      todayLabel.textContent = todayCount > 0 ? '⚡ Posted Today' : '⚡ Posted Yesterday (Oct 2)';
-    }
-    const todayDesc = document.getElementById('stat-today-desc');
-    if (todayDesc) {
-      todayDesc.textContent = todayCount > 0
-        ? `${todayCount} freshly posted today · ${yCount} yesterday`
-        : `${yCount} fresh opportunities from Oct 2 · Click to view`;
-    }
+    statTodayJobs.textContent = todayCount;
+    document.getElementById('stat-today-label').textContent = 'Posted today';
+    document.getElementById('stat-today-desc').textContent = `${todayCount} today · ${yCount} yesterday`;
   }
   const jobsDesc = document.getElementById('stat-jobs-desc');
   if (jobsDesc) {
-    const hidden = stats.hidden_reasons || {};
-    const parts = [
-      `${hidden.date ?? 0} outside date window or undated`,
-      `${hidden.repost ?? 0} reposted`,
-      `${hidden.language ?? 0} language requirement`
-    ];
-    if (hidden.easy_apply) {
-      parts.push(`${hidden.easy_apply} Easy Apply`);
-    }
-    jobsDesc.textContent = `${stats.total_jobs ?? 0} visible · ${stats.hidden_jobs ?? 0} hidden (${parts.join(', ')}). Tracked applications stay visible.`;
+    jobsDesc.textContent = 'Recent roles and tracked applications';
+    jobsDesc.title = `${stats.stored_jobs ?? 0} stored · ${stats.hidden_jobs ?? 0} excluded by eligibility filters`;
   }
   statStrongFits.textContent = stats.strong_matches || 0;
   statAppliedCount.textContent = stats.applied_count || 0;
@@ -314,8 +302,7 @@ function filterAndSortJobs() {
 
     // Portal / Site filter
     if (currentPortalFilter !== 'all') {
-      const p = normalizePortalKey(job.portal);
-      if (p !== currentPortalFilter) {
+      if (!jobPortalKeys(job).includes(currentPortalFilter)) {
         return false;
       }
     }
@@ -398,15 +385,16 @@ function renderJobs() {
     const portalName = isPortalFiltered ? formatPortalName(currentPortalFilter) : '';
     jobsGrid.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-dim);">
-        <p style="font-size: 20px; margin-bottom: 8px;">No matching opportunities found${isPortalFiltered ? ` on ${portalName}` : ''}</p>
+        <p style="font-size: 20px; margin-bottom: 8px;">No matching opportunities found${isPortalFiltered ? ` on ${escapeHtml(portalName)}` : ''}</p>
         <p style="font-size: 13px; margin-bottom: 16px;">Try relaxing your search query or switching filters.</p>
         ${isPortalFiltered ? `
-          <button class="btn-primary" onclick="openScrapeForPortal('${escapeAttr(currentPortalFilter)}')" style="display: inline-flex; margin: 0 auto;">
-            ⚡ Scrape ${portalName} Jobs Now
+          <button class="btn-primary" data-action="scrape" style="display: inline-flex; margin: 0 auto;">
+            ⚡ Scrape ${escapeHtml(portalName)} Jobs Now
           </button>
         ` : ''}
       </div>
     `;
+    jobsGrid.querySelector('[data-action="scrape"]')?.addEventListener('click', () => openScrapeForPortal(currentPortalFilter));
     return;
   }
 
@@ -452,7 +440,7 @@ function renderJobs() {
     else if (job.score >= 60) tierClass = 'tier-good';
 
     const tagsHtml = (job.tags || [])
-      .map(tag => `<span class="tech-tag">${tag}</span>`)
+      .map(tag => `<span class="tech-tag">${escapeHtml(tag)}</span>`)
       .join('');
 
     const isTracked = Boolean(job.is_applied);
@@ -468,23 +456,23 @@ function renderJobs() {
     }
 
     let actionsHtml = `
-      <button class="btn-accent btn-generate" id="btn-gen-${escapeAttr(job.key)}" onclick="generateDocuments(this, '${escapeStr(job.key)}', '${escapeStr(job.company)}', '${escapeStr(job.clean_title || job.title)}', '${escapeStr(job.url)}')">
+      <button class="btn-accent btn-generate" id="btn-gen-${escapeAttr(job.key)}" data-action="generate">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         Generate CV &amp; Cover Letter
       </button>
-      <button class="btn-applied-toggle-sm not-applied" onclick="toggleAppliedStatus(this, '${escapeStr(job.company)}', '${escapeStr(job.clean_title || job.title)}', 'applied', '${escapeStr(job.url || '')}', '${escapeStr(job.key || '')}')" title="Quickly mark as Applied without generating CV">
+      <button class="btn-applied-toggle-sm not-applied" data-action="status" title="Quickly mark as Applied without generating CV">
         ○ Mark Applied
       </button>
     `;
 
     if (job.is_applied) {
       actionsHtml = `
-        ${job.cv_file ? `<button class="btn-secondary" onclick="viewPdf('${job.cv_file}', '${escapeStr(job.company)} CV')">📄 CV</button>` : ''}
-        ${job.cover_letter_file ? `<button class="btn-secondary" onclick="viewPdf('${job.cover_letter_file}', '${escapeStr(job.company)} Letter')">✉️ Letter</button>` : ''}
-        <button class="btn-applied-toggle-sm ${isApplied ? 'is-applied' : 'not-applied'}" onclick="toggleAppliedStatus(this, '${escapeStr(job.company)}', '${escapeStr(job.clean_title || job.title)}', '${isApplied ? 'drafted' : 'applied'}', '${escapeStr(job.url || '')}', '${escapeStr(job.key || '')}')" title="${isApplied ? 'Application is marked Applied. Click to toggle Not Applied' : 'Application is Drafted. Click to mark Applied'}">
+        ${job.cv_file ? `<button class="btn-secondary" data-action="cv">📄 CV</button>` : ''}
+        ${job.cover_letter_file ? `<button class="btn-secondary" data-action="letter">✉️ Letter</button>` : ''}
+        <button class="btn-applied-toggle-sm ${isApplied ? 'is-applied' : 'not-applied'}" data-action="status" title="${isApplied ? 'Application is marked Applied. Click to toggle Not Applied' : 'Application is Drafted. Click to mark Applied'}">
           ${isApplied ? '✓ Applied' : '○ Not Applied'}
         </button>
-        <button class="btn-secondary btn-generate" style="font-size: 11px; padding: 6px 10px;" id="btn-gen-${escapeAttr(job.key)}" onclick="generateDocuments(this, '${escapeStr(job.key)}', '${escapeStr(job.company)}', '${escapeStr(job.clean_title || job.title)}', '${escapeStr(job.url)}')">
+        <button class="btn-secondary btn-generate" style="font-size: 11px; padding: 6px 10px;" id="btn-gen-${escapeAttr(job.key)}" data-action="generate">
           🔄 Regenerate
         </button>
       `;
@@ -524,8 +512,8 @@ function renderJobs() {
             <h2 class="job-title">${escapeHtml(job.clean_title || job.title)}</h2>
           </div>
           <div class="score-badge ${tierClass}">
-            <div class="score-num">${job.score}%</div>
-            <div class="score-tier">${job.tier}</div>
+            <div class="score-num">${Number(job.score) || 0}%</div>
+            <div class="score-tier">${escapeHtml(job.tier)}</div>
           </div>
         </div>
 
@@ -538,10 +526,11 @@ function renderJobs() {
       <div class="card-footer">
         <div class="footer-meta">
           <span>📅 ${dateDisplay}</span>
-          <span class="portal-badge portal-${normalizePortalKey(job.portal)}" onclick="filterByPortal('${normalizePortalKey(job.portal)}')" title="Filter dashboard to ${formatPortalName(job.portal)} postings">🌐 ${escapeHtml(formatPortalName(job.portal))}</span>
+          ${job.listing_count > 1 ? `<span class="listing-count" title="${escapeHtml((job.portals || []).map(formatPortalName).join(', '))}">${Number(job.listing_count)} listings combined</span>` : ''}
+          <span class="portal-badge portal-${normalizePortalKey(job.portal)}" data-action="portal" title="Filter dashboard to ${escapeHtml(formatPortalName(job.portal))} postings">🌐 ${escapeHtml(formatPortalName(job.portal))}</span>
         </div>
         <div class="card-btns">
-          <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" title="View official listing">
+          <a href="${escapeHtml(safeExternalUrl(job.url))}" target="_blank" rel="noopener noreferrer" class="btn-secondary" title="View official listing">
             Open Link ↗
           </a>
           ${actionsHtml}
@@ -549,6 +538,7 @@ function renderJobs() {
       </div>
     `;
 
+    bindRecordActions(card, job);
     jobsGrid.appendChild(card);
   });
   updateFilterCounts();
@@ -610,32 +600,33 @@ function renderTracker() {
     const isApplied = (app.status || '').toLowerCase() === 'applied';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${app.date || '--'}</td>
+      <td>${escapeHtml(app.date || '--')}</td>
       <td style="font-weight: 600; color: #fff;">${escapeHtml(app.company)}</td>
       <td>${escapeHtml(app.role)}</td>
       <td>
         <button class="btn-applied-toggle ${isApplied ? 'is-applied' : 'not-applied'}"
-                onclick="toggleAppliedStatus(this, '${escapeStr(app.company)}', '${escapeStr(app.role)}', '${isApplied ? 'drafted' : 'applied'}', '${escapeStr(app.source || '')}')"
+                data-action="status"
                 title="${isApplied ? 'Status: Applied. Click to mark as Not Applied (Drafted)' : 'Status: Not Applied. Click to mark as Applied'}">
           <span class="toggle-dot"></span>
           <span class="toggle-text">${isApplied ? '✓ Applied' : '○ Not Applied'}</span>
         </button>
       </td>
-      <td style="font-weight: 700; color: var(--accent-green);">${app.fit_rating ? app.fit_rating + '%' : '--'}</td>
+      <td style="font-weight: 700; color: var(--accent-green);">${app.fit_rating ? escapeHtml(app.fit_rating) + '%' : '--'}</td>
       <td>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
           <span>${app.contact_person ? `<strong style="color: #fff;">👤 ${escapeHtml(app.contact_person)}</strong>` : `<span style="color: var(--text-muted);">Hiring Team</span>`}</span>
-          <button class="btn-edit-contact" title="Edit Contact Person" onclick="editContactPerson('${escapeStr(app.company)}', '${escapeStr(app.role)}', '${escapeStr(app.contact_person || '')}')">✏️</button>
+          <button class="btn-edit-contact" title="Edit Contact Person" data-action="contact">✏️</button>
         </div>
       </td>
       <td>
         <div style="display: flex; gap: 8px;">
-          ${app.cv_file ? `<button class="btn-secondary" onclick="viewPdf('${app.cv_file}', '${escapeStr(app.company)} CV')">📄 CV</button>` : ''}
-          ${app.cover_letter_file ? `<button class="btn-secondary" onclick="viewPdf('${app.cover_letter_file}', '${escapeStr(app.company)} Cover Letter')">✉️ Cover Letter</button>` : ''}
-          ${app.source ? `<a href="${app.source}" target="_blank" class="btn-secondary">🔗 Link</a>` : ''}
+          ${app.cv_file ? `<button class="btn-secondary" data-action="cv">📄 CV</button>` : ''}
+          ${app.cover_letter_file ? `<button class="btn-secondary" data-action="letter">✉️ Cover Letter</button>` : ''}
+          ${app.source ? `<a href="${escapeHtml(safeExternalUrl(app.source))}" target="_blank" class="btn-secondary">🔗 Link</a>` : ''}
         </div>
       </td>
     `;
+    bindRecordActions(tr, app, true);
     trackerTableBody.appendChild(tr);
   });
 }
@@ -752,7 +743,8 @@ window.generateDocuments = async function(btn, jobKey, company, title, url) {
 window.viewPdf = function(filePath, title) {
   if (!filePath) return;
   modalTitle.textContent = title || 'Document Preview';
-  pdfFrame.src = `/${filePath}?v=${Date.now()}`;
+  pdfFrame.src = documentUrl(filePath);
+  document.getElementById('pdf-open-link').href = documentUrl(filePath);
   pdfModal.showModal();
 };
 
@@ -831,7 +823,7 @@ function setupEventListeners() {
       document.querySelector('.controls-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       if (targetDate === 'yesterday') {
         const yCount = allJobs.filter(isJobYesterday).length;
-        showToast(`⚡ Filtered to ${yCount} opportunities posted yesterday (Oct 2)!`);
+        showToast(`⚡ Filtered to ${yCount} opportunities posted yesterday!`);
       } else {
         showToast('⚡ Filtered to opportunities posted today!');
       }
@@ -1247,17 +1239,17 @@ Your Qualifications:
           }
 
           if (studioPdfFrame) {
-            studioPdfFrame.src = `/${data.cv_file}?v=${Date.now()}`;
+            studioPdfFrame.src = documentUrl(data.cv_file);
           }
           if (btnTabPdfCv) btnTabPdfCv.classList.add('active');
           if (btnTabPdfCl) btnTabPdfCl.classList.remove('active');
 
           if (btnDownloadCv) {
-            btnDownloadCv.href = `/${data.cv_file}?v=${Date.now()}`;
+            btnDownloadCv.href = documentUrl(data.cv_file);
             btnDownloadCv.setAttribute('download', data.cv_file.split('/').pop());
           }
           if (btnDownloadCl) {
-            btnDownloadCl.href = `/${data.cover_letter_file}?v=${Date.now()}`;
+            btnDownloadCl.href = documentUrl(data.cover_letter_file);
             btnDownloadCl.setAttribute('download', data.cover_letter_file.split('/').pop());
           }
 
@@ -1298,7 +1290,7 @@ Your Qualifications:
       btnTabPdfCv.classList.add('active');
       if (btnTabPdfCl) btnTabPdfCl.classList.remove('active');
       if (currentGeneratedCv && studioPdfFrame) {
-        studioPdfFrame.src = `/${currentGeneratedCv}?v=${Date.now()}`;
+        studioPdfFrame.src = documentUrl(currentGeneratedCv);
       }
     });
   }
@@ -1308,7 +1300,7 @@ Your Qualifications:
       btnTabPdfCl.classList.add('active');
       if (btnTabPdfCv) btnTabPdfCv.classList.remove('active');
       if (currentGeneratedCl && studioPdfFrame) {
-        studioPdfFrame.src = `/${currentGeneratedCl}?v=${Date.now()}`;
+        studioPdfFrame.src = documentUrl(currentGeneratedCl);
       }
     });
   }
@@ -1475,12 +1467,41 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function escapeStr(str) {
-  if (!str) return '';
-  return String(str).replace(/'/g, "\\'");
-}
-
 function escapeAttr(str) {
   if (!str) return '';
   return String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '#';
+  } catch { return '#'; }
+}
+
+function documentUrl(value) {
+  const path = String(value || '');
+  if (!/^(cv|cover_letters|documents\/applications)\//.test(path) || !path.endsWith('.pdf') || path.split('/').includes('..')) return '';
+  return '/' + path.split('/').map(encodeURIComponent).join('/') + '?v=' + Date.now();
+}
+
+function bindRecordActions(element, record, tracker = false) {
+  const title = tracker ? record.role : (record.clean_title || record.title);
+  const url = tracker ? record.source : record.url;
+  element.querySelectorAll('[data-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      switch (button.dataset.action) {
+        case 'generate': return window.generateDocuments(button, record.key, record.company, title, url);
+        case 'status': return window.toggleAppliedStatus(button, record.company, title, record.status === 'applied' ? 'drafted' : 'applied', url || '', record.key || '');
+        case 'cv': return window.viewPdf(record.cv_file, record.company + ' CV');
+        case 'letter': return window.viewPdf(record.cover_letter_file, record.company + ' Cover Letter');
+        case 'contact': return window.editContactPerson(record.company, title, record.contact_person || '');
+        case 'portal': return window.filterByPortal(normalizePortalKey(record.portal));
+      }
+    });
+  });
+}
+
+function jobPortalKeys(job) {
+  return [...new Set((job.portals || [job.portal]).map(normalizePortalKey))];
 }

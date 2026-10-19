@@ -23,6 +23,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tools.job_selection import role_category, DuplicateIndex, is_dual_study_posting
+from tools.state_io import atomic_write_text, file_lock, read_job_state
 from tools.job_key import make_key
 from tools.rank_state import tracker_pairs, norm
 
@@ -34,20 +36,18 @@ def load_seen_jobs():
     if not SEEN_JOBS_FILE.is_file():
         return {"seen": {}}
     try:
-        data = json.loads(SEEN_JOBS_FILE.read_text(encoding="utf-8"))
+        data, _ = read_job_state(SEEN_JOBS_FILE)
         if "seen" not in data:
             data = {"seen": data}
         return data
     except Exception as e:
-        print(f"Warning: Could not parse {SEEN_JOBS_FILE}: {e}", file=sys.stderr)
-        return {"seen": {}}
+        raise ValueError(f"Could not parse {SEEN_JOBS_FILE}; refusing to replace existing job history: {e}") from e
 
 
 def save_seen_jobs(data):
     SEEN_JOBS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temporary = SEEN_JOBS_FILE.with_suffix(".tmp")
-    temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    temporary.replace(SEEN_JOBS_FILE)
+    with file_lock(SEEN_JOBS_FILE):
+        atomic_write_text(SEEN_JOBS_FILE, json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
 
 SEARCH_AUDIT = []
@@ -141,6 +141,7 @@ def run_linkedin_search(query: str, location: str, limit: int, jobage: int = 2):
                 "company": item.get("company", "").strip(),
                 "url": item.get("url", "").strip(),
                 "posted_date": raw_date.split("T")[0] if raw_date else None,
+                "location": item.get("location") or "",
                 "portal": "linkedin-search"
             })
         return results
@@ -208,7 +209,7 @@ def is_reposted_or_stale(text: str) -> bool:
 def fetch_linkedin_details(id_or_url: str):
     cli_path = ROOT / ".agents" / "skills" / "linkedin-search" / "cli" / "src" / "cli.ts"
     if not cli_path.is_file():
-        return "", True, None, False
+        return "", False, None, None
     m = re.search(r"(\d{6,})", id_or_url)
     jid = m.group(1) if m else id_or_url
     cmd = ["bun", "run", str(cli_path), "detail", jid, "--format", "json"]
@@ -217,14 +218,15 @@ def fetch_linkedin_details(id_or_url: str):
         if res.returncode == 0:
             data = json.loads(res.stdout)
             desc = data.get("description", "") or ""
-            is_fresh = data.get("isFresh", True)
+            is_fresh = data.get("isFresh", False)
             repost = data.get("repostDetected", False)
             time_ago = data.get("postedTimeAgo")
-            easy_apply = data.get("easyApply", False)
-            return desc, (is_fresh and not repost), time_ago, easy_apply
+            easy_apply = data.get("easyApply")
+            verified = bool(desc.strip()) and isinstance(easy_apply, bool)
+            return desc, (verified and is_fresh is True and repost is False), time_ago, easy_apply
     except Exception:
         pass
-    return "", True, None, False
+    return "", False, None, None
 
 
 def run_freehire_search(query: str, country: str, limit: int, jobage: int = 2):
@@ -252,6 +254,7 @@ def run_freehire_search(query: str, country: str, limit: int, jobage: int = 2):
                 "url": item.get("url", "").strip(),
                 "posted_date": raw_date.split("T")[0] if raw_date else None,
                 "description": item.get("description", "").strip(),
+                "location": item.get("location") or "",
                 "portal": "freehire-search"
             })
         return results
@@ -286,6 +289,7 @@ def run_arbeitsagentur_search(query: str, location: str, limit: int, jobage: int
                 "company": (item.get("company") or "").strip(),
                 "url": (item.get("url") or "").strip(),
                 "posted_date": raw_date.split("T")[0] if raw_date else None,
+                "location": item.get("location") or "",
                 "portal": "arbeitsagentur-search"
             })
         return results
@@ -336,6 +340,7 @@ def run_stepstone_search(query: str, location: str, limit: int, jobage: int = 2)
                 "url": (item.get("url") or "").strip(),
                 "posted_date": raw_date.split("T")[0] if raw_date else None,
                 "description": (item.get("description") or "").strip(),
+                "location": item.get("location") or "",
                 "portal": "stepstone-search"
             })
         return results
@@ -386,6 +391,7 @@ def run_xing_search(query: str, location: str, limit: int, jobage: int = 2):
                 "url": (item.get("url") or "").strip(),
                 "posted_date": raw_date.split("T")[0] if raw_date else None,
                 "description": (item.get("description") or "").strip(),
+                "location": item.get("location") or "",
                 "portal": "xing-search"
             })
         return results
@@ -461,7 +467,7 @@ def search_queries(query=None, student=False, include_defaults=False):
     return [q for q in queries if not (q.casefold() in seen or seen.add(q.casefold()))]
 
 
-def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pairs, seen, enabled_portals=None):
+def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pairs, seen, enabled_portals=None, duplicate_index=None):
     if enabled_portals is None:
         enabled_portals = {"linkedin", "freehire", "arbeitsagentur", "stepstone", "xing"}
 
@@ -483,6 +489,8 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
         for future in pending:
             all_raw.extend(future.result())
 
+    duplicate_index = duplicate_index if duplicate_index is not None else DuplicateIndex(seen.values())
+    skipped_irrelevant = 0
     new_count = 0
     skipped_tracker = 0
     skipped_seen = 0
@@ -502,6 +510,12 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
         if not title or not company:
             continue
 
+        # Reject dual-study programmes before requesting posting details.
+        if is_dual_study_posting(title, job.get("description", "")):
+            skipped_irrelevant += 1
+            print(f"  [SKIPPED - Duales Studium] {company} — {title}")
+            continue
+
         # Skip known jobs before any detail network request.
         pair = (norm(company), norm(title))
         if pair in applied_pairs:
@@ -509,7 +523,7 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
             continue
 
         key = make_key(company=company, title=title, url=url)
-        if key in seen:
+        if key in seen or duplicate_index.match(job) is not None:
             skipped_seen += 1
             continue
 
@@ -536,7 +550,7 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
         desc = job.get("description", "")
         posted_time_ago = None
         easy_apply = False
-        if not desc and url:
+        if url and (not desc or portal == "linkedin-search"):
             if portal == "linkedin-search":
                 desc, is_fresh, time_ago, easy_apply = fetch_linkedin_details(url)
                 posted_time_ago = time_ago
@@ -556,6 +570,11 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
                 desc = fetch_xing_description(url)
             job["description"] = desc
 
+        # A missing description cannot establish language eligibility.
+        if not desc.strip():
+            print(f"  [SKIPPED - Details could not be verified] {company} — {title}")
+            continue
+
         # Repost Detection: Discard postings containing repost markers or relative stale dates
         if is_reposted_or_stale(title) or is_reposted_or_stale(desc):
             skipped_old += 1
@@ -567,8 +586,17 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
             print(f"  🇩🇪 [SKIPPED - German C1/C2 required] {company} — {title}")
             continue
 
+        if role_category(title, desc) is None:
+            skipped_irrelevant += 1
+            continue
+        job["description"] = desc
+        if duplicate_index.match(job) is not None:
+            skipped_seen += 1
+            continue
+
         seen[key] = {
             "title": title,
+            "location": job.get("location") or "",
             "company": company,
             "url": url,
             "first_seen": str(date.today()),
@@ -582,10 +610,13 @@ def scrape_query(query: str, location: str, limit: int, jobage: int, applied_pai
             "description": desc,
             "easy_apply": easy_apply
         }
+        duplicate_index.add(seen[key])
         new_count += 1
         print(f"  ✨ [NEW] ({portal}) {company} — {title}")
         print(f"     URL: {url}")
 
+    if skipped_irrelevant:
+        print(f"  [FILTERED] {skipped_irrelevant} ineligible postings (role scope or dual study)")
     return new_count, skipped_seen, skipped_tracker, skipped_old, skipped_german_c1, skipped_easy_apply
 
 
@@ -612,6 +643,7 @@ def main():
     applied_pairs = tracker_pairs(TRACKER_FILE)
     state = load_seen_jobs()
     seen = state["seen"]
+    duplicate_index = DuplicateIndex(seen.values())
 
     if args.portals == "all":
         enabled_portals = {"linkedin", "freehire", "arbeitsagentur", "stepstone", "xing"}
@@ -629,7 +661,7 @@ def main():
     total_skipped_easy_apply = 0
 
     for q in queries:
-        n, s, t, o, c, ea = scrape_query(q, args.location, args.limit, args.jobage, applied_pairs, seen, enabled_portals=enabled_portals)
+        n, s, t, o, c, ea = scrape_query(q, args.location, args.limit, args.jobage, applied_pairs, seen, enabled_portals=enabled_portals, duplicate_index=duplicate_index)
         total_new += n
         total_skipped_seen += s
         total_skipped_tracker += t

@@ -5,41 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Job Search Radar — Opportunities & Match Engine</title>
   <meta name="description" content="Interactive dashboard and matching engine for AI Job Search, displaying scraped jobs, algorithmic fit scores, and application tracking.">
-  <link rel="stylesheet" href="/web/styles.css?v=20260919_1">
+  <link rel="stylesheet" href="/web/styles.css?v=20261012_1">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2222%22 font-size=%2220%22>🎯</text></svg>">
 </head>
 <body>
+  <a class="skip-link" href="#view-jobs">Skip to content</a>
+  <aside class="workspace-sidebar" aria-label="Workspace navigation">
+    <div class="workspace-brand"><span class="brand-symbol" aria-hidden="true">◎</span><span>Job radar<span class="brand-caption">YOUR CAREER WORKSPACE</span></span></div>
+    <div class="sidebar-label">WORKSPACE</div>
+    <nav class="tabs-nav" aria-label="Dashboard Views">
+      <button class="tab-btn active" id="tab-jobs" data-view="jobs">
+        <span>Opportunities</span>
+        <span class="tab-badge" id="tab-badge-jobs">0</span>
+      </button>
+      <button class="tab-btn" id="tab-tracker" data-view="tracker">
+        <span>Applications</span>
+        <span class="tab-badge" id="tab-badge-tracker">0</span>
+      </button>
+      <button class="tab-btn tab-btn-studio" id="tab-generator" data-view="generator">
+        <span>Document studio</span>
+      </button>
+    </nav>
+    <div class="sidebar-note"><span class="sidebar-note-icon" aria-hidden="true">↗</span><strong>Your next chapter.</strong><p>Discover the right roles.<br>Build an application that fits.</p></div>
+    <div class="sidebar-profile"><div class="candidate-avatar">YG</div><div><strong>Yashwanth Gotike</strong><span>Koblenz, Germany</span></div></div>
+  </aside>
   <div class="container">
     <!-- Header -->
     <header>
       <div class="logo-group">
-        <div class="radar-icon">🎯</div>
+        <div class="workspace-eyebrow">OVERVIEW <span>/</span> YOUR JOB SEARCH</div>
         <div class="logo-title">
-          <h1>AI Job Search Radar</h1>
-          <p>Scraper, Algorithmic Matching & Application Pipeline</p>
+          <h1>Find your next opportunity<span class="heading-dot">.</span></h1>
+          <p>A focused space to discover roles, track progress, and prepare your next application.</p>
         </div>
       </div>
       
       <div class="header-actions">
-        <div class="candidate-badge">
-          <div class="candidate-avatar">YG</div>
-          <div class="candidate-info">
-            <div class="candidate-name">Yashwanth Gotike</div>
-            <div class="candidate-sub">Data Engineer & AI Specialist (5+ YOE)</div>
-          </div>
-        </div>
         <button id="btn-header-generator" class="btn-accent" aria-label="Paste Job Description to Generate Documents">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
-          Paste JD & Generate
+          Create application
         </button>
 
         <button id="btn-open-scrape" class="btn-primary" aria-label="Trigger New Scrape">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
-          Scrape New Jobs
+          Find new jobs
         </button>
       </div>
     </header>
@@ -47,55 +60,44 @@
     <!-- Metrics Stat Bar -->
     <section class="stats-grid" id="stats-container" aria-label="Pipeline Metrics">
       <div class="stat-card" style="--card-accent: #06b6d4;">
-        <div class="stat-label">Stored Opportunities</div>
+        <div class="stat-label">Opportunities</div>
         <div class="stat-val" id="stat-total-jobs">--</div>
-        <div class="stat-desc" id="stat-jobs-desc">Visible postings follow the two-day filter; tracked applications remain visible.</div>
+        <div class="stat-desc" id="stat-jobs-desc">Recent roles and tracked applications</div>
       </div>
       <div class="stat-card stat-card-clickable" id="stat-card-today" style="--card-accent: #f59e0b; cursor: pointer;" title="Click to view and filter recent jobs">
-        <div class="stat-label" id="stat-today-label">⚡ Posted Today</div>
+        <div class="stat-label" id="stat-today-label">Posted today</div>
         <div class="stat-val" id="stat-today-jobs">--</div>
         <div class="stat-desc" id="stat-today-desc">Freshly published opportunities ready to apply</div>
       </div>
       <div class="stat-card" style="--card-accent: #10b981;">
-        <div class="stat-label">Strong Matches (75%+)</div>
+        <div class="stat-label">Strong matches</div>
         <div class="stat-val" id="stat-strong-fits">--</div>
-        <div class="stat-desc">Direct overlap with Databricks, Spark, RAG</div>
+        <div class="stat-desc">Roles aligned with your experience</div>
       </div>
       <div class="stat-card" style="--card-accent: #8b5cf6;">
-        <div class="stat-label">Applications Active / Drafted</div>
+        <div class="stat-label">Applications</div>
         <div class="stat-val" id="stat-applied-count">--</div>
-        <div class="stat-desc" id="stat-applied-desc">Tracked in job_search_tracker.csv</div>
+        <div class="stat-desc" id="stat-applied-desc">Your drafts and submitted applications</div>
       </div>
       <div class="stat-card" style="--card-accent: #38bdf8;">
-        <div class="stat-label">Average Fit Rating</div>
+        <div class="stat-label">Average fit</div>
         <div class="stat-val" id="stat-avg-score">--<span>%</span></div>
         <div class="stat-desc">Across all scanned roles in Germany</div>
       </div>
     </section>
 
     <!-- View Navigation Tabs -->
-    <nav class="tabs-nav" aria-label="Dashboard Views">
-      <button class="tab-btn active" id="tab-jobs" data-view="jobs">
-        <span>Scraped Opportunities</span>
-        <span class="tab-badge" id="tab-badge-jobs">0</span>
-      </button>
-      <button class="tab-btn" id="tab-tracker" data-view="tracker">
-        <span>Application Pipeline</span>
-        <span class="tab-badge" id="tab-badge-tracker">0</span>
-      </button>
-      <button class="tab-btn tab-btn-studio" id="tab-generator" data-view="generator">
-        <span>✨ Paste JD & Generate</span>
-      </button>
-    </nav>
+
 
     <!-- View: Jobs Explorer -->
     <main id="view-jobs">
+      <div class="section-heading"><div><span class="workspace-eyebrow">DISCOVER</span><h2>Opportunity board</h2></div><span class="section-caption">Make your next move count</span></div>
       <!-- Search & Filters Panel -->
       <section class="controls-panel" aria-label="Filters">
         <div class="search-row">
           <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" id="input-search" placeholder="Search by company, role title, or technology (e.g. Databricks, PySpark, Agentic)..." aria-label="Search jobs">
+            <input type="text" id="input-search" placeholder="Search roles, companies, or skills…" aria-label="Search jobs">
           </div>
           <select id="select-sort" class="sort-select" aria-label="Sort by">
             <option value="score_desc">Match Score: Day Before First</option>
@@ -106,6 +108,7 @@
           </select>
         </div>
 
+        <details class="advanced-filters"><summary>Refine opportunities <span>Dates, status, sources & skills</span></summary>
         <div class="filter-pills" id="date-pills">
           <span class="filter-label">Date Posted:</span>
           <button class="pill active" data-date="all">All Recent (≤ 2 Days)</button>
@@ -149,6 +152,7 @@
           <button class="pill" data-tier="Strong Fit">Strong Fit (75%+)</button>
           <button class="pill" data-tier="Good Fit">Good Fit (60%+)</button>
         </div>
+        </details>
       </section>
 
       <!-- Jobs Grid -->
@@ -201,8 +205,8 @@
     <section id="view-generator" style="display: none;" aria-label="Custom Application Studio">
       <div class="studio-header">
         <div class="studio-header-title">
-          <h2>✨ Custom Application Studio</h2>
-          <p>Paste any job description from LinkedIn, StepStone, email, or company career portal. Antigravity will autonomously analyze requirements, extract tech stack, check ATS & German language compliance, dynamically tailor a 2-page ModernCV and 1-page XeLaTeX Cover Letter, compile the PDFs, and update your tracker.</p>
+          <h2>Application studio</h2>
+          <p>Start with a job description. Review the requirements, prepare a tailored CV and cover letter, and keep your application together in one place.</p>
         </div>
         <div class="studio-header-toolbar">
           <button type="button" id="btn-gen-paste-clipboard" class="btn-secondary" title="Paste text from clipboard">
@@ -224,8 +228,8 @@
         <!-- Left: Input Form -->
         <div class="studio-card studio-form-card">
           <div class="studio-card-header">
-            <h3>📝 Job Requisition Details</h3>
-            <span class="studio-badge-subtle">ATS ModernCV & XeLaTeX Engine</span>
+            <h3>Job details</h3>
+            <span class="studio-badge-subtle">TAILORED TO THE ROLE</span>
           </div>
 
           <form id="form-custom-generator" onsubmit="return false;">
@@ -303,7 +307,7 @@
           <!-- Live Radar Panel (Default/Live) -->
           <div id="studio-live-radar" class="studio-radar-panel">
             <div class="studio-card-header">
-              <h3>🎯 Real-Time Requisition Radar</h3>
+              <h3>Role insights</h3>
               <span class="studio-badge-live">Live Fit Scanner</span>
             </div>
 
@@ -473,6 +477,7 @@
     <dialog id="pdf-modal" aria-labelledby="modal-title">
       <div class="modal-header">
         <h3 id="modal-title">Document Preview</h3>
+        <a id="pdf-open-link" class="btn-secondary" target="_blank" rel="noopener noreferrer">Open PDF ↗</a>
         <button id="btn-close-pdf" class="btn-close" aria-label="Close dialog">✕</button>
       </div>
       <div class="modal-body">
@@ -539,6 +544,6 @@
     <div class="toast-container" id="toast-container"></div>
   </div>
 
-  <script src="/web/app.js?v=20260919_1"></script>
+  <script src="/web/app.js?v=20261012_1"></script>
 </body>
 </html>

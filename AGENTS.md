@@ -63,8 +63,8 @@ To prevent duplication and configuration drift across different AI agent framewo
    - Beside `Koblenz, Germany` in the CV address block (`\address{Koblenz, Germany \,|\, <Headline>}{}{}`), include a dynamically tailored professional discipline headline in normal text weight (`\mdseries` / regular text, NEVER bolded).
    - NEVER include seniority prefixes (e.g., Senior, Junior, Lead, Principal, Associate, Staff).
    - NEVER include student or internship tags (e.g., Werkstudent, Working Student, Praktikant, Intern, Praktikum).
-   - For hybrid roles (e.g., "AI & Data"), dynamically evaluate the job description to resolve cleanly to either `AI Engineer`, `Data Engineer`, or `Data Analyst`.
-   - The headline must strictly resolve to the candidate's core professional discipline: `Data Engineer`, `Data Analyst`, or `AI Engineer`.
+   - Normalize the headline to an established professional role such as `Data Scientist`, `Machine Learning Engineer`, `Analytics Engineer`, `Data Engineer`, `Data Analyst`, or `AI Engineer`. Preserve recognized disciplines; map generic/branded titles from actual responsibilities. Never copy arbitrary programme titles such as `Flexikum Technical Consultant` into the header.
+   - Follow the canonical headline selection and ambiguous-role rules in [.claude/skills/job-application-assistant/05-cv-templates.md](.claude/skills/job-application-assistant/05-cv-templates.md#job-title-based-cv-headline).
 16. **Data Governance Quality Assurance Seminar Utilization:**
    - The candidate completed an advanced academic seminar on **"Data Governance Quality Assurance"** at the University of Koblenz.
    - Whenever a target job posting mentions data governance, quality assurance, data quality, schema validation, data profiling, metadata management, or compliance:

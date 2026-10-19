@@ -24,6 +24,49 @@ Expected output: `Output written on YashwanthGotike_<CompanyName>_CV.pdf (2 page
 
 ## Document Structure
 
+### Role-specific Technical Skills groups
+
+Use four concise skill groups by default, adding a fifth only for a distinct,
+relevant requirement in the posting. Choose and order categories dynamically;
+do not reuse the same grouping for every role. For Data Scientist applications,
+the usual structure is Machine Learning & Statistics, Programming & Data
+Preparation, MLOps & Software Engineering, and Cloud & Databases. Separate
+modelling/statistics from deployment/version-control tools and group databases
+with data storage. Include only confirmed, relevant skills without repetition
+or filler. Keep groups easy to scan (usually 2–6 skills each) and the CV exactly
+two pages. A smaller set is acceptable only when the confirmed relevant evidence
+cannot support four meaningful groups; do not invent skills to fill space.
+
+Explicitly retain employer-requested tools that are confirmed in the candidate
+profile, including Microsoft Excel and PowerPoint. Group Office and presentation
+tools coherently with business intelligence/reporting; do not omit required
+business tools in favour of unrelated advanced ML frameworks. A posting alone
+does not confirm a candidate skill; obtain confirmation before adding it.
+List Excel and PowerPoint as tool names only, without proficiency labels such as
+`(Proficient)`. Keep the confirmation in the candidate profile, not as a CV rating.
+
+### Job-title-based CV headline
+
+Normalize the professional headline beside `Koblenz, Germany` to an established
+professional discipline, in regular text weight. An explicit recognized discipline takes priority over keyword
+counts in the description: `Data Scientist` stays `Data Scientist`, including for
+postings about ML models or data pipelines. Other examples include `Machine Learning
+Engineer`, `Analytics Engineer`, `Business Analyst`, `Data Engineer`, `Data Analyst`
+and `AI Engineer`; this is not a closed list. Use other established roles when
+supported, such as `Software Engineer`, `Data Architect` or `Research Scientist`.
+Never copy arbitrary prefixes, company branding, programme names or generic
+consultant/specialist labels into the headline. For example, `Flexikum Technical
+Consultant - ServiceNow Agentic AI Solutions` maps to `AI Engineer`, based on its
+agentic AI, LLM, MCP and API integration responsibilities. Generic Technical
+Consultant postings map to Data Engineer, Data Analyst, Machine Learning Engineer
+or another established role according to the actual work, rather than the word
+Consultant itself.
+
+Remove seniority prefixes, student/internship tags, gender markers, location and
+employment labels from the headline. Use the description to resolve ambiguous
+titles such as `AI & Data`, or domain-only student titles. Do not change historical
+employment titles, employers or dates to match the target headline.
+
 ```latex
 \documentclass[11pt,a4paper,sans]{moderncv}
 \moderncvstyle{banking}
@@ -78,7 +121,7 @@ Expected output: `Output written on YashwanthGotike_<CompanyName>_CV.pdf (2 page
 
 % Personal data (Template placeholders: [FIRST_NAME], [LAST_NAME], [YOUR_EMAIL], [YOUR_PHONE])
 \name{Yashwanth}{Gotike}
-\address{Koblenz, Germany \,|\, <Tailored Role Headline, e.g. Data Engineer / Data Analyst / AI Engineer>}{}{}
+\address{Koblenz, Germany \,|\, <Established discipline inferred from the job title and responsibilities>}{}{}
 \phone[mobile]{(+49)~17674755646}
 \email{gycrgotike@gmail.com}
 \extrainfo{\href{https://linkedin.com/in/ycrgotike}{LinkedIn: in/ycrgotike} \,|\, \href{https://github.com/ycrgotike}{GitHub: ycrgotike}}

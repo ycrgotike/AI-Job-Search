@@ -26,7 +26,10 @@ def run_tool(command):
             text=True,
             encoding="utf-8",
             errors="replace",
+            timeout=30,
         ).stdout
+    except subprocess.TimeoutExpired as exc:
+        raise VerificationError(f"{command[0]} timed out after 30 seconds") from exc
     except FileNotFoundError as exc:
         raise VerificationError(
             f"required command '{command[0]}' was not found. "

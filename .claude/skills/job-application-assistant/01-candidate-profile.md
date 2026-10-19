@@ -88,6 +88,10 @@ Bengaluru, India
 
 ## Technical Skills
 
+### Confirmed MS Office Proficiency
+- User confirmed proficiency in Microsoft Excel and Microsoft PowerPoint on 19 October 2026.
+- Do not infer VBA, advanced financial modelling, certifications, or a specific employer achievement from this confirmation. Include Excel and PowerPoint explicitly when relevant to the posting.
+
 ### Confirmed Platform Operations Skills
 - User confirmed hands-on experience on 14 September 2026: Kubernetes, Terraform, Docker, CI/CD, cloud deployment, LLM deployment, Windows/Linux administration, monitoring and security.
 - Include these in Technical Skills when relevant to the role. This confirms skills, not a particular employer, project implementation, duration, scale, certification, quantified outcome or advanced proficiency level. Require separate evidence for those claims; do not infer Ansible, Puppet, PowerShell or NIS2 experience from this confirmation.

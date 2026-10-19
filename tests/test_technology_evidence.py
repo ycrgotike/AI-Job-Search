@@ -1,10 +1,47 @@
 import unittest
 from unittest.mock import patch
-from tools.technology_evidence import review_technologies, learning_sentence
+from tools.technology_evidence import review_technologies, learning_sentence, ensure_office_skill_coverage
 from tools.responsibility_plan import analyze_posting
 from tools import generate_application as g
 
 class TechnologyEvidence(unittest.TestCase):
+    def test_office_entries_use_tool_names_without_proficiency_labels(self):
+        groups = [{'label': 'Office', 'terms': ['Microsoft Excel (Proficient)', 'Microsoft PowerPoint (Proficient)']}]
+        result = ensure_office_skill_coverage(groups, 'Use Excel and PowerPoint.', g.profile_text())
+        self.assertEqual(result[0]['terms'], ['Microsoft Excel', 'Microsoft PowerPoint'])
+
+    def test_office_confirmation_does_not_imply_vba(self):
+        review = review_technologies('Use Excel, PowerPoint and VBA.', g.profile_text())
+        statuses = {r['technology']: r['status'] for r in review['technologies']}
+        self.assertEqual(statuses['Excel'], 'confirmed')
+        self.assertEqual(statuses['PowerPoint'], 'confirmed')
+        self.assertNotEqual(statuses['VBA'], 'confirmed')
+
+    def test_model_office_omission_is_repaired_without_growing_group_count(self):
+        groups = [
+            {'label': 'Programming', 'terms': ['Python', 'SQL']},
+            {'label': 'Business Intelligence & Visualization', 'terms': ['Power BI', 'DAX', 'Tableau', 'Plotly', 'Seaborn', 'Matplotlib']},
+            {'label': 'Data', 'terms': ['PostgreSQL', 'MySQL']},
+            {'label': 'Statistics', 'terms': ['Statistical Analysis', 'A/B Testing']},
+        ]
+        repaired = ensure_office_skill_coverage(groups,
+            'You are proficient in Excel and PowerPoint. Power BI is an advantage.', g.profile_text())
+        self.assertEqual(len(repaired), 4)
+        self.assertIn('MS Office', repaired[1]['label'])
+        self.assertTrue({'Excel', 'PowerPoint', 'Power BI'}.issubset(repaired[1]['terms']))
+        self.assertEqual(len(repaired[1]['terms']), 6)
+        self.assertNotIn('Excel', groups[1]['terms'])
+
+    def test_posting_alone_cannot_add_office_proficiency(self):
+        groups = [{'label': 'Programming', 'terms': ['Python', 'SQL']}]
+        self.assertEqual(ensure_office_skill_coverage(groups,
+            'Proficient in Excel and PowerPoint.', '- Tools: Python, SQL'), groups)
+
+    def test_office_aliases_do_not_create_duplicate_skills(self):
+        groups = [{'label': 'Office', 'terms': ['Microsoft Excel', 'Microsoft PowerPoint']}]
+        self.assertEqual(ensure_office_skill_coverage(groups,
+            'Use Excel and PowerPoint.', g.profile_text()), groups)
+
     def test_negated_tools_do_not_become_skills(self):
         profile='- **Python**: automation\n- No experience with Jenkins\n- Do not infer Terraform experience.'
         review=review_technologies('Use Python, Jenkins and Terraform.',profile)

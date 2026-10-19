@@ -117,6 +117,7 @@ site for the role and store that URL instead, or drop the candidate rather than 
 fragment link.
 
 For every candidate:
+- **Discard Duales Studium / dual-study programme postings across every portal:** Reject German variants such as `duales/dualen Studium`, `dualer Studiengang`, `Dualstudent`, and English `dual study` / `dual studies` when the title or role-specific details identify this posting as that programme. Reject obvious titles before fetching details; recheck the full description before saving. Never save new dual-study postings to `seen_jobs.json` or present them as dashboard opportunities. A generic employer reference to other dual-study programmes does not establish this job's type. Ordinary Werkstudent, internship and thesis positions remain eligible under the other gates.
 - **Discard if posting requires German C1/C2 / verhandlungssicher / native German:** Yashwanth Gotike's profile is German B2 (Intermediate) and English C1 (Fluent). Postings requiring minimum German C1/C2 or verhandlungssicher are an immediate hard rejection and must not be saved to `seen_jobs.json`.
 - **Discard if LinkedIn posting is Easy Apply:** The candidate exclusively targets direct employer applications (company career portals / offsite apply) where tailored ModernCV and XeLaTeX cover letters are evaluated. Any LinkedIn posting using "Easy Apply" (`apply-link-onsite`, `guest-to-member-job-apply`) must be discarded immediately and never saved to `seen_jobs.json`.
 - Skip if the URL matches any existing `seen_jobs.json` entry, regardless of

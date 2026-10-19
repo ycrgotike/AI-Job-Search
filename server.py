@@ -14,10 +14,14 @@ import re
 import subprocess
 import sys
 from datetime import date
+from functools import wraps
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, unquote
+
+from tools.job_selection import role_category, display_category, consolidate_jobs, is_dual_study_posting
+from tools.state_io import atomic_write_csv, file_lock, read_job_state, update_job_state
 
 ROOT = Path(__file__).resolve().parent
 WEB_DIR = ROOT / "web"
@@ -145,20 +149,16 @@ def calculate_match_score(title, description=""):
     score = 50.0  # baseline
     matched_tags = []
 
-    from tools.generate_application import is_student_role
-    # Priority role match in title
-    if is_student_role(title, description):
-        score += 22
+    family = role_category(title, description)
+    if family is None:
+        return 0, "Outside target roles", []
+    bonuses = {"Data Engineering": 25, "Data Analytics & BI": 20, "AI / ML & GenAI": 22}
+    score += bonuses[family]
+    matched_tags.append(family)
+    from tools.job_selection import STUDENT
+    if STUDENT.search(title or ""):
+        score += 2
         matched_tags.append("Working Student")
-    elif any(k in title.lower() for k in ["data engineer", "azure databricks", "spark", "lakehouse"]):
-        score += 25
-        matched_tags.append("Data Engineering")
-    elif any(k in title.lower() for k in ["data analyst", "business intelligence", "bi analyst"]):
-        score += 20
-        matched_tags.append("Analytics & BI")
-    elif any(k in title.lower() for k in ["ai engineer", "machine learning", "genai", "mlops"]):
-        score += 22
-        matched_tags.append("AI / ML")
 
     # Keyword scanning
     tech_hits = 0
@@ -205,7 +205,14 @@ def load_tracker():
 
     try:
         with TRACKER_FILE.open(encoding="utf-8") as f:
-            for row in csv.DictReader(f):
+            records = list(csv.DictReader(f))
+            file_roles = {}
+            for record in records:
+                identity = (record.get("company"), clean_title(record.get("role") or ""))
+                for field in ("cv_file", "cover_letter_file"):
+                    if record.get(field):
+                        file_roles.setdefault(record[field], set()).add(identity)
+            for row in records:
                 comp = re.sub(r"[^a-z0-9]", "", (row.get("company") or "").lower())
                 role = re.sub(r"[^a-z0-9]", "", clean_title(row.get("role") or "").lower())
                 source_url = (row.get("source") or "").strip()
@@ -225,6 +232,22 @@ def load_tracker():
 
                 cv_f = row.get("cv_file")
                 cl_f = row.get("cover_letter_file")
+                from tools.generate_application import application_archive_dir
+                archive = application_archive_dir(row.get("company") or "", row.get("role") or "")
+                for field, value in (("cv_file", cv_f), ("cover_letter_file", cl_f)):
+                    if value:
+                        archived = archive / Path(value).name
+                        if archived.is_file():
+                            if field == "cv_file":
+                                cv_f = str(archived.relative_to(ROOT))
+                            else:
+                                cl_f = str(archived.relative_to(ROOT))
+                        elif len(file_roles.get(value, ())) > 1:
+                            # An unarchived shared file cannot identify an earlier role.
+                            if field == "cv_file":
+                                cv_f = None
+                            else:
+                                cl_f = None
 
                 entry = {
                     "date": row.get("date"),
@@ -277,10 +300,10 @@ def get_enriched_jobs(*, include_counts=False):
     state = {}
     if SEEN_JOBS_FILE.is_file():
         try:
-            data = json.loads(SEEN_JOBS_FILE.read_text(encoding="utf-8"))
-            state = data.get("seen", data)
+            _, state = read_job_state(SEEN_JOBS_FILE)
         except Exception as e:
             print(f"Error loading seen jobs: {e}", file=sys.stderr)
+            raise ValueError('Saved postings could not be read. The job-history file needs repair; it has not been replaced.') from e
 
     tracker_apps = load_tracker()
     unique_entries = {id(e): e for e in tracker_apps.values()}.values()
@@ -295,7 +318,7 @@ def get_enriched_jobs(*, include_counts=False):
             tracker_by_comp.setdefault(t_comp, []).append((t_role, t_jid, t_url, t_val))
 
     jobs = []
-    hidden = {"date": 0, "repost": 0, "language": 0, "easy_apply": 0}
+    hidden = {"date": 0, "repost": 0, "language": 0, "easy_apply": 0, "relevance": 0, "duplicates": 0, "dual_study": 0}
 
     for key, item in state.items():
         title = item.get("title", "")
@@ -325,6 +348,9 @@ def get_enriched_jobs(*, include_counts=False):
 
         # Filter out opportunities (unless tracked in tracker_apps)
         if not app_info:
+            if is_dual_study_posting(title, desc):
+                hidden["dual_study"] += 1
+                continue
             posted_str = item.get("posted_date")
             if not posted_str:
                 hidden["date"] += 1
@@ -356,6 +382,11 @@ def get_enriched_jobs(*, include_counts=False):
                 hidden["easy_apply"] += 1
                 continue
 
+        category = display_category(title, desc)
+        if category is None and not app_info:
+            hidden["relevance"] += 1
+            continue
+        category = category or "Other"
         score, tier, tags = calculate_match_score(title, desc)
 
         status = app_info["status"] if app_info else item.get("status", "new")
@@ -365,17 +396,6 @@ def get_enriched_jobs(*, include_counts=False):
                 tier = "Strong Fit" if score >= 75 else ("Good Fit" if score >= 60 else "Moderate Fit")
             except Exception:
                 pass
-
-        from tools.generate_application import is_student_role
-        t_low = title.lower()
-        if is_student_role(title, item.get("description", "")):
-            category = "Werkstudent & Intern"
-        elif any(x in t_low for x in ["analyst", "analytics", "business intelligence", "bi"]):
-            category = "Data Analytics & BI"
-        elif any(x in t_low for x in ["ai", "machine learning", "ml", "genai", "deep learning"]):
-            category = "AI / ML & GenAI"
-        else:
-            category = "Data Engineering"
 
         detected_cp = item.get("contact_person")
         if not detected_cp:
@@ -401,6 +421,8 @@ def get_enriched_jobs(*, include_counts=False):
 
         jobs.append({
             "key": key,
+            "_description": desc,
+            "location": item.get("location") or "",
             "title": title,
             "company": company,
             "clean_title": clean_title(title),
@@ -421,10 +443,14 @@ def get_enriched_jobs(*, include_counts=False):
             "easy_apply": item.get("easy_apply", False)
         })
 
+    before_dedup = len(jobs)
+    jobs = consolidate_jobs(jobs)
+    hidden["duplicates"] = before_dedup - len(jobs)
     jobs.sort(key=lambda x: ((x.get("status") or "").lower() == "applied", -x["score"]))
     reasons = {"date": hidden["date"], "repost": hidden["repost"], "language": hidden["language"]}
-    if hidden.get("easy_apply", 0) > 0:
-        reasons["easy_apply"] = hidden["easy_apply"]
+    for reason in ("easy_apply", "relevance", "duplicates", "dual_study"):
+        if hidden[reason]:
+            reasons[reason] = hidden[reason]
     counts = {"stored_jobs": len(state), "hidden_jobs": sum(hidden.values()), "hidden_reasons": reasons}
     _ENRICHED_CACHE = (jobs, counts)
     _ENRICHED_CACHE_KEY = cache_key
@@ -434,13 +460,38 @@ def get_enriched_jobs(*, include_counts=False):
     return jobs
 
 
+def serialize_tracker_updates(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        if urlparse(self.path).path in ('/api/tracker/update_status', '/api/tracker/update_contact'):
+            with file_lock(TRACKER_FILE):
+                return method(self, *args, **kwargs)
+        return method(self, *args, **kwargs)
+    return wrapped
+
+
 class DashboardHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
+    def valid_host(self):
+        try:
+            host = urlparse("http://" + self.headers.get("Host", "")).hostname
+        except ValueError:
+            host = None
+        if host not in {"localhost", "127.0.0.1", "::1"}:
+            self.send_error(HTTPStatus.FORBIDDEN, "Only localhost requests are allowed")
+            return False
+        return True
+
+    def do_HEAD(self):
+        self.send_error(HTTPStatus.METHOD_NOT_ALLOWED, "Use GET for public resources")
+
     def do_GET(self):
+        if not self.valid_host():
+            return
         parsed = urlparse(self.path)
-        path = parsed.path
+        path = unquote(parsed.path)
 
         if path in ["/", "/index.html"]:
             self.serve_file(WEB_DIR / "index.html", "text/html")
@@ -451,7 +502,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.serve_file(target)
             return
         elif path == "/api/jobs":
-            self.send_json(get_enriched_jobs())
+            try:
+                jobs = get_enriched_jobs()
+            except ValueError as exc:
+                self.send_json({'error': str(exc)}, status=503)
+                return
+            self.send_json(jobs)
             return
         elif path == "/api/tracker":
             apps = list(load_tracker().values())
@@ -466,7 +522,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.send_json(unique_apps)
             return
         elif path == "/api/stats":
-            jobs, counts = get_enriched_jobs(include_counts=True)
+            try:
+                jobs, counts = get_enriched_jobs(include_counts=True)
+            except ValueError as exc:
+                self.send_json({'error': str(exc)}, status=503)
+                return
             total = len(jobs)
             tracker = load_tracker()
             seen_combos = set()
@@ -505,16 +565,23 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             }
             self.send_json(stats)
             return
-        elif path.startswith("/cv/") or path.startswith("/cover_letters/"):
+        elif path.startswith(("/cv/", "/cover_letters/", "/documents/applications/")):
             target = ROOT / path.lstrip("/")
             if target.is_file() and target.suffix.lower() == ".pdf":
                 self.serve_file(target, "application/pdf")
                 return
 
-        return super().do_GET()
+        self.send_error(HTTPStatus.NOT_FOUND, "Endpoint not found")
 
+    @serialize_tracker_updates
     def do_POST(self):
+        if not self.valid_host():
+            return
         parsed = urlparse(self.path)
+        origin = self.headers.get("Origin")
+        if origin and origin != f"http://{self.headers.get('Host')}":
+            self.send_error(HTTPStatus.FORBIDDEN, "Cross-origin requests are not allowed")
+            return
         if parsed.path == "/api/scrape":
             length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(length).decode("utf-8") if length else "{}"
@@ -701,20 +768,6 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 return
 
             try:
-                import importlib
-                for mod_name in [
-                    'tools.generation_diagnostics',
-                    'tools.job_description',
-                    'tools.responsibility_plan',
-                    'tools.technology_evidence',
-                    'tools.gemini_tailoring',
-                    'tools.generate_application',
-                ]:
-                    if mod_name in sys.modules:
-                        try:
-                            importlib.reload(sys.modules[mod_name])
-                        except Exception:
-                            pass
                 import tools.generate_application
                 res = tools.generate_application.generate_for_job(job_data)
                 self.send_json(res)
@@ -754,10 +807,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                         rows.append(r)
 
             if updated and headers:
-                with TRACKER_FILE.open("w", encoding="utf-8", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=headers)
-                    writer.writeheader()
-                    writer.writerows(rows)
+                atomic_write_csv(TRACKER_FILE, headers, rows)
 
             self.send_json({"success": True, "company": company, "role": role, "contact_person": contact_person})
             return
@@ -875,30 +925,24 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 updated = True
 
             if updated and headers:
-                with TRACKER_FILE.open("w", encoding="utf-8", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=headers)
-                    writer.writeheader()
-                    writer.writerows(rows)
+                atomic_write_csv(TRACKER_FILE, headers, rows)
 
             # Sync with seen_jobs.json if entry exists
             if SEEN_JOBS_FILE.is_file():
                 try:
-                    seen_data = json.loads(SEEN_JOBS_FILE.read_text(encoding="utf-8"))
-                    is_nested = "seen" in seen_data
-                    seen_dict = seen_data.get("seen", seen_data)
-                    seen_updated = False
-                    for k, item in seen_dict.items():
-                        c_clean = re.sub(r"[^a-z0-9]", "", (item.get("company") or "").strip().lower())
-                        t_clean = re.sub(r"[^a-z0-9]", "", clean_title(item.get("title") or "").lower())
-                        i_url = (item.get("url") or "").strip()
-                        if (c_clean == req_comp_clean or req_comp_clean in c_clean or c_clean in req_comp_clean) and \
-                           (t_clean == req_role_clean or req_role_clean in t_clean or t_clean in req_role_clean) or \
-                           (source_url and i_url and source_url == i_url) or (job_key and k == job_key):
-                            item["status"] = status_val
-                            seen_updated = True
-                    if seen_updated:
-                        to_write = seen_data if is_nested else seen_dict
-                        SEEN_JOBS_FILE.write_text(json.dumps(to_write, indent=2, ensure_ascii=False), encoding="utf-8")
+                    def sync_status(seen_dict):
+                        seen_updated = False
+                        for k, item in seen_dict.items():
+                            c_clean = re.sub(r"[^a-z0-9]", "", (item.get("company") or "").strip().lower())
+                            t_clean = re.sub(r"[^a-z0-9]", "", clean_title(item.get("title") or "").lower())
+                            i_url = (item.get("url") or "").strip()
+                            if (c_clean == req_comp_clean or req_comp_clean in c_clean or c_clean in req_comp_clean) and \
+                               (t_clean == req_role_clean or req_role_clean in t_clean or t_clean in req_role_clean) or \
+                               (source_url and i_url and source_url == i_url) or (job_key and k == job_key):
+                                item["status"] = status_val
+                                seen_updated = True
+                        return seen_updated
+                    update_job_state(SEEN_JOBS_FILE, sync_status)
                 except Exception as e:
                     print(f"Error updating seen_jobs.json status: {e}", file=sys.stderr)
 
@@ -914,6 +958,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint not found")
 
     def serve_file(self, path: Path, content_type: str = None):
+        # Resolve before checking containment, including symlink targets.
+        path = path.resolve()
+        public_web = { ROOT.resolve() / "web" / name for name in ("index.html", "styles.css", "app.js") }
+        document_roots = [ROOT.resolve() / "cv", ROOT.resolve() / "cover_letters", ROOT.resolve() / "documents/applications"]
+        allowed_pdf = path.suffix.lower() == ".pdf" and any(
+            path.is_relative_to(directory) for directory in document_roots)
+        if path not in public_web and not allowed_pdf:
+            self.send_error(HTTPStatus.NOT_FOUND, "File not found")
+            return
         if not path.is_file():
             self.send_error(HTTPStatus.NOT_FOUND, f"File {path.name} not found")
             return
@@ -937,13 +990,17 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             except Exception:
                 pass
 
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self'; object-src 'self'; base-uri 'none'; frame-ancestors 'self'")
+        super().end_headers()
+
     def send_json(self, data, status=200):
         try:
             body = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
             self.wfile.write(body)
@@ -957,7 +1014,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 def run_server(port=8000):
-    server = ThreadingHTTPServer(("0.0.0.0", port), DashboardHandler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), DashboardHandler)
     print(f"\n==================================================")
     print(f"🚀 AI Job Search Dashboard running at:")
     print(f"👉 http://localhost:{port}")

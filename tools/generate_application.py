@@ -16,6 +16,7 @@ for any target job posting, enforcing all workspace and candidate rules:
 """
 
 import argparse
+import fcntl
 import csv
 import json
 import os
@@ -35,6 +36,7 @@ for dependency in ('tools.responsibility_plan', 'tools.job_description', 'tools.
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from tools.state_io import atomic_write_csv, file_lock, update_job_state
 TINYTEX_BIN = Path.home() / "Library" / "TinyTeX" / "bin" / "universal-darwin"
 TRACKER_FILE = ROOT / "job_search_tracker.csv"
 SEEN_JOBS_FILE = ROOT / "job_scraper" / "seen_jobs.json"
@@ -169,17 +171,16 @@ def persist_description(job_key: str, description: str, metadata=None):
     if not SEEN_JOBS_FILE.is_file() or not job_key:
         return
     try:
-        with SEEN_JOBS_FILE.open(encoding="utf-8") as f:
-            data = json.load(f)
-        seen = data.get("seen", {})
-        if job_key in seen:
+        def save_description(seen):
+            if job_key not in seen:
+                return False
             if description:
                 seen[job_key]["description"] = description
             for field in ('description_source_url', 'discovery_url', 'description_status', 'description_fetch_errors'):
                 if metadata and field in metadata:
                     seen[job_key][field] = metadata[field]
-            with SEEN_JOBS_FILE.open("w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            return True
+        update_job_state(SEEN_JOBS_FILE, save_description)
     except Exception:
         pass
 
@@ -686,13 +687,17 @@ def determine_header_title(role_title: str, description: str = "") -> str:
     2. NEVER include student/intern words ('Werkstudent', 'Working Student', 'Praktikant', 'Intern', 'Praktikum', etc.).
     3. If the role mentions both 'AI' and 'Data' (e.g. 'Werkstudent AI & Data'), dynamically evaluate the
        job description to determine whether it leans towards 'AI Engineer', 'Data Engineer', or 'Data Analyst'.
-    4. Otherwise, map cleanly to the target discipline:
-       - AI/ML/GenAI -> 'AI Engineer'
-       - Data Analytics/BI -> 'Data Analyst'
-       - Data Engineering/Lakehouse/Pipelines -> 'Data Engineer'
+    4. Normalize to established professional disciplines, never arbitrary job
+       title text. Preserve recognized roles such as Data Scientist; infer the
+       discipline of generic/branded consultant titles from their actual work.
     """
     t_low = role_title.lower()
     d_low = description.lower() if description else ""
+
+    # A Data Scientist posting remains Data Scientist even when its description
+    # contains many references to ML models, pipelines or AI engineering.
+    if re.search(r"\bdata[\s-]+scientist\b|\bdatenwissenschaftler(?:in)?\b", t_low):
+        return "Data Scientist"
 
     # Check for AI & Data hybrid roles (e.g. "AI & Data", "Data & AI", "KI & Daten")
     is_ai_and_data = bool(
@@ -700,7 +705,10 @@ def determine_header_title(role_title: str, description: str = "") -> str:
         or re.search(r"\b(data|daten)\b.*?(&|and|und|\+|/|\bmit\b).*?\b(ai|ki)\b", t_low)
     )
 
-    if is_ai_and_data and d_low:
+    has_explicit_profession = re.search(
+        r"\b(?:engineer|scientist|analyst|architect|developer|consultant|"
+        r"specialist|manager|researcher|administrator|designer|owner)\b", t_low)
+    if is_ai_and_data and d_low and not has_explicit_profession:
         ai_terms = [
             r"\b(llm|llms|large language model|large language models)\b",
             r"\b(rag|retrieval-augmented generation)\b",
@@ -733,6 +741,32 @@ def determine_header_title(role_title: str, description: str = "") -> str:
         elif da_score > 0:
             return "Data Analyst"
 
+    # Match specific professional titles before broad words like 'analytics',
+    # 'AI' or 'engineer'. These rules are shared by rules and model generation.
+    explicit_titles = (
+        (r"\banalytics[\s-]+engineer\b", "Analytics Engineer"),
+        (r"\b(?:machine[\s-]+learning|ml|deep[\s-]+learning)[\s-]+engineer\b", "Machine Learning Engineer"),
+        (r"\b(?:artificial intelligence|ai|ki)[\s-]+engineer\b", "AI Engineer"),
+        (r"\b(?:business intelligence|bi)[\s-]+(?:analyst|analytiker)\b", "Business Intelligence Analyst"),
+        (r"\bbusiness[\s-]+analyst\b", "Business Analyst"),
+        (r"\bdata[\s-]+analyst\b|\bdatenanalyst(?:in)?\b", "Data Analyst"),
+        (r"\bdata[\s-]+engineer\b", "Data Engineer"),
+        (r"\bresearch[\s-]+scientist\b", "Research Scientist"),
+        (r"\bdata[\s-]+architect\b", "Data Architect"),
+        (r"\b(?:business intelligence|bi)[\s-]+developer\b", "BI Developer"),
+        (r"\bsoftware[\s-]+engineer\b", "Software Engineer"),
+        (r"\bsoftware[\s-]+developer\b", "Software Developer"),
+        (r"\bcloud[\s-]+engineer\b", "Cloud Engineer"),
+        (r"\bdevops[\s-]+engineer\b", "DevOps Engineer"),
+    )
+    title_matches = [(match.start(), headline) for pattern, headline in explicit_titles
+                     if (match := re.search(pattern, t_low))]
+    if title_matches:
+        return min(title_matches)[1]
+
+    if re.search(r"\bdata[\s-]+science\b", t_low):
+        return "Data Scientist"
+
     # Machine Learning focus
     if any(k in t_low for k in ["machine learning", "deep learning", "ml engineer", "ml-engineer", "machine-learning"]):
         return "Machine Learning Engineer"
@@ -753,7 +787,7 @@ def determine_header_title(role_title: str, description: str = "") -> str:
         return "Data Analyst"
 
     # Data Engineer / Lakehouse / Pipelines focus
-    if any(k in t_low for k in ["engineer", "engineering", "databricks", "spark", "lakehouse", "pipeline", "plattform", "platform", "etl"]):
+    if any(k in t_low for k in ["data engineering", "databricks", "spark", "lakehouse", "pipeline", "etl"]):
         return "Data Engineer"
 
     # If title mentions AI/KI in combination
@@ -762,19 +796,31 @@ def determine_header_title(role_title: str, description: str = "") -> str:
 
     # Description-based fallback
     if d_low:
-        ai_count = len(re.findall(r"\b(ai|ki|ml|llm|rag|agent|agents|model)\b", d_low))
-        de_count = len(re.findall(r"\b(pipeline|etl|elt|spark|databricks|lakehouse|warehouse)\b", d_low))
-        da_count = len(re.findall(r"\b(dashboard|reporting|analyst|analytics|power bi|tableau)\b", d_low))
-        if ai_count > de_count and ai_count > da_count:
-            return "AI Engineer"
-        if da_count > de_count:
-            return "Data Analyst"
+        from tools.job_selection import responsibility_text
+        # Employer introductions and unrelated department names must not decide
+        # the discipline of a generic Technical Consultant/Specialist posting.
+        duties = responsibility_text(description).lower() or d_low
+        disciplines = (
+            ('AI Engineer', r'\b(?:llms?|rag|agents?|agentic|genai|generative ai|prompt engineering|mcp|ki.workflows|agentenbasiert\w*)\b'),
+            ('Machine Learning Engineer', r'\b(?:machine learning|deep learning|classification|regression|clustering|pytorch|tensorflow|mlflow|ml models?)\b'),
+            ('Data Engineer', r'\b(?:pipelines?|etl|elt|spark|databricks|lakehouse|warehouse|data integration|datenintegration|datenpipelines?)\b'),
+            ('Data Analyst', r'\b(?:dashboards?|reporting|analytics|power bi|tableau|statistical analysis|datenanalyse|kpis?)\b'),
+            ('Software Engineer', r'\b(?:rest apis?|backend|software development|application development|softwareentwicklung)\b'),
+            ('Cloud Engineer', r'\b(?:terraform|kubernetes|cloud infrastructure|infrastructure as code)\b'),
+        )
+        # Distinct duty themes count once; repeated keywords do not outweigh
+        # several concrete responsibilities in another discipline.
+        scores = [(len(set(re.findall(pattern, duties, re.I))), -index, headline)
+                  for index, (headline, pattern) in enumerate(disciplines)]
+        score, _, headline = max(scores)
+        if score:
+            return headline
 
     return "Data Engineer"
 
 
 PROFILE_FILE = ROOT / '.claude/skills/job-application-assistant/01-candidate-profile.md'
-GENERATOR_VERSION = '2.9.2'
+GENERATOR_VERSION = '2.9.6'
 
 
 def profile_text():
@@ -812,35 +858,72 @@ def role_family(title, description):
     return 'data'
 
 
-def skill_groups(family, description):
+def skill_groups(family, description, role_title=""):
     # Only positive skill statements: exclude caveats listing unconfirmed tools.
-    text = profile_text().split('## Technical Skills', 1)[1].split('## Awards', 1)[0]
     from tools.technology_evidence import positive_evidence, review_technologies
     positives = '\n'.join(positive_evidence(profile_text()))
     groups = {
-        'cloud': ('Cloud & Automation', ['Terraform', 'Kubernetes', 'Docker', 'CI/CD', 'GitHub Actions', 'Azure', 'AWS', 'GCP', 'Git', 'cloud deployment']),
+        'cloud': ('Cloud & Databases', ['AWS', 'Azure', 'GCP', 'MS SQL Server', 'PostgreSQL', 'MySQL']),
+        'delivery': ('Software Engineering & Delivery', ['Git', 'CI/CD', 'GitHub Actions', 'Docker', 'Terraform', 'Kubernetes']),
         'operations': ('Systems & Operations', ['Windows/Linux administration', 'monitoring', 'security']),
-        'data': ('Programming & Data Engineering', ['Python', 'SQL', 'Azure Data Factory', 'Databricks', 'Apache Spark', 'Airflow', 'ETL/ELT']),
-        'ai': ('AI & Deployment', ['LangChain', 'LlamaIndex', 'LLM deployment', 'LLMs', 'RAG', 'Vector Databases', 'MLflow', 'DVC', 'Flask', 'FastAPI', 'PyTorch', 'TensorFlow']),
-        'analytics': ('Analytics & Reporting', ['Power BI', 'DAX', 'Tableau', 'A/B Testing', 'Cohort Analysis', 'Statistical Analysis']),
+        'data': ('Data Integration & Pipelines', ['Azure Data Factory', 'Databricks', 'Apache Spark', 'Airflow', 'ETL/ELT']),
+        'programming': ('Programming & Data Preparation', ['Python', 'SQL', 'Pandas', 'NumPy', 'SciPy']),
+        'ai': ('GenAI & Retrieval', ['LangChain', 'LlamaIndex', 'LLMs', 'RAG', 'Vector Databases', 'Agentic AI']),
+        'models': ('Machine Learning & Statistics', ['Scikit-learn', 'PyTorch', 'TensorFlow', 'Statistical Analysis', 'A/B Testing', 'Hypothesis Testing']),
+        'mlops': ('MLOps & Software Engineering', ['MLflow', 'DVC', 'Flask', 'FastAPI', 'Docker', 'Git', 'CI/CD']),
+        'analytics': ('Business Intelligence & Visualisation', ['Power BI', 'DAX', 'Tableau', 'Plotly', 'Seaborn', 'Matplotlib']),
+        'statistics': ('Statistics & Experimentation', ['Statistical Analysis', 'A/B Testing', 'Hypothesis Testing', 'Cohort Analysis']),
+        'governance': ('Data Governance & Quality', ['schema enforcement', 'data profiling', 'metadata management', 'data lineage tracking', 'automated validation']),
     }
-    order = {'platform': ['cloud', 'operations', 'ai', 'data', 'analytics'],
-             'analytics': ['analytics', 'data', 'cloud', 'ai', 'operations'],
-             'ai': ['ai', 'cloud', 'data', 'analytics', 'operations'],
-             'data': ['data', 'cloud', 'ai', 'analytics', 'operations']}[family]
+    # Use four coherent groups, with a fifth only when a distinct posting need
+    # calls for it. A Data Scientist title takes precedence over a broad family.
+    headline = determine_header_title(role_title, description) if role_title else ''
+    predictive_ai = (family == 'ai'
+                     and re.search(r'machine learning|deep learning|classification|regression|predictive', description, re.I)
+                     and not re.search(r'\b(?:llms?|rag|genai|agentic)\b|generative ai', description, re.I))
+    if headline in ('Data Scientist', 'Machine Learning Engineer') or predictive_ai:
+        order = ['models', 'programming', 'mlops', 'cloud']
+    else:
+        order = {'platform': ['operations', 'delivery', 'cloud', 'programming'],
+                 'analytics': ['analytics', 'statistics', 'programming', 'cloud'],
+                 'ai': ['ai', 'programming', 'mlops', 'cloud'],
+                 'data': ['data', 'programming', 'cloud', 'delivery']}[family]
+    for key, pattern in (
+        ('governance', r'data quality|governance|schema validation|metadata|compliance'),
+        ('data', r'\b(?:airflow|spark|databricks|etl|elt)\b'),
+        ('ai', r'\b(?:llms?|rag|genai|agentic)\b'),
+    ):
+        if key not in order and re.search(pattern, description, re.I):
+            order.append(key)
+            break
     # Relevant confirmed tools outside the old fixed lists must not disappear.
+    technology_review = review_technologies(description, profile_text())
+    office = [r['technology'] for r in technology_review['technologies']
+              if r['status'] == 'confirmed' and r['technology'] in ('Excel', 'PowerPoint')]
+    if office:
+        target = 'analytics' if 'analytics' in order else 'programming'
+        label, terms = groups[target]
+        label = 'MS Office & Business Intelligence' if target == 'analytics' else 'Programming & MS Office'
+        groups[target] = (label, office + terms)
     listed = {term.casefold() for _, terms in groups.values() for term in terms}
-    extra = [r['technology'] for r in review_technologies(description, profile_text())['technologies']
+    extra = [r['technology'] for r in technology_review['technologies']
              if r['status'] == 'confirmed' and r['technology'].casefold() not in listed]
     ai_tools = {'LangGraph','Google ADK','MCP','Vertex AI','Gemini','OpenAI','Anthropic','Llama','Mistral'}
-    groups['ai'][1].extend(t for t in extra if t in ai_tools)
-    groups['data'][1].extend(t for t in extra if t not in ai_tools)
+    for term in extra:
+        if term in ai_tools:
+            target = 'ai' if 'ai' in order else 'mlops' if 'mlops' in order else 'cloud'
+        else:
+            target = 'data' if 'data' in order else 'programming'
+        groups[target][1].insert(0, term)
     result = []
+    used = set()
     for key in order:
         label, terms = groups[key]
-        supported = [t for t in terms if re.search(r'(?<!\w)' + re.escape(t) + r'(?!\w)', positives, re.I)]
+        supported = [t for t in terms if t.casefold() not in used and re.search(r'(?<!\w)' + re.escape(t) + r'(?!\w)', positives, re.I)]
         supported.sort(key=lambda term: term.lower() not in description.lower())
-        if supported:
+        supported = supported[:6]
+        if len(supported) >= 2:
+            used.update(t.casefold() for t in supported)
             result.append(r'\item \textbf{' + escape_latex(label) + '}: ' + escape_latex(', '.join(supported)) + '.')
     return result
 
@@ -861,7 +944,7 @@ def build_tailored_cv(company, company_pascal, role_title, description, is_stude
         raise ValueError('No supported responsibility match; manual tailoring is required.')
     primary = plan['responsibilities'][0]
     family = primary['family']
-    groups = skill_groups(family, description)
+    groups = skill_groups(family, description, role_title)
     is_student = is_student_role(role_title, description)
     is_senior = is_senior_role(role_title, description)
     header_discipline = determine_header_title(role_title, description)
@@ -1311,6 +1394,24 @@ def build_tailored_cover_letter(company, company_pascal, role_title, description
         opening = f'I am applying for the {clean_r} position at {company}. As a Master’s student in Web and Data Science, I would bring my Python, reporting and LLM project experience to maintaining reliable support content and improving AI-assisted workflows.'
 
     thematic_paragraphs = compose_evidence(plan, section_bullets)
+    # Include measurable employment evidence even when the primary duties select
+    # independent projects. Use an unchanged profile fact and explicit attribution.
+    if not any(re.search(r'\d', body) and re.search(r'SolTech|G\.S\.R|ITC Infotech', body)
+               for _, body in thematic_paragraphs):
+        candidates = []
+        terms = set(re.findall(r'[a-z]{3,}', description.lower()))
+        for heading, employer in [('Data Analyst - SolTech', 'SolTech InfoLabs'),
+                                  ('Data Engineer - G.S.R', 'G.S.R Educational Institutions'),
+                                  ('Associate IT Consultant', 'ITC Infotech')]:
+            for fact in section_bullets(heading):
+                if re.search(r'\d', fact):
+                    score = len(terms & set(re.findall(r'[a-z]{3,}', fact.lower())))
+                    candidates.append((score, employer, fact))
+        if candidates:
+            _, employer, fact = max(candidates, key=lambda item: item[0])
+            thematic_paragraphs.append(('Measured Engineering Impact',
+                f'At {employer}, I {fact[0].lower() + fact[1:]} '
+                f'I would apply the same systematic approach to {duties[0]["responsibility"]}.'))
 
     # When a posting matches only 1 duty, dynamically provide a complementary evidence pillar grounded in verified profile
     if len(thematic_paragraphs) < 2:
@@ -1546,6 +1647,11 @@ def compile_latex(engine: str, tex_file: Path, cwd: Path) -> bool:
 
 
 def record_in_tracker(company: str, role: str, cv_rel: str, cl_rel: str, source_url: str = "", fit_rating: int = 85, contact_person: str = ""):
+    with file_lock(TRACKER_FILE):
+        return _record_in_tracker(company, role, cv_rel, cl_rel, source_url, fit_rating, contact_person)
+
+
+def _record_in_tracker(company: str, role: str, cv_rel: str, cl_rel: str, source_url: str = "", fit_rating: int = 85, contact_person: str = ""):
     """Update or append entry in job_search_tracker.csv."""
     canonical_headers = [
         "date", "company", "sector", "role", "role_type", "channel", "status",
@@ -1601,10 +1707,7 @@ def record_in_tracker(company: str, role: str, cv_rel: str, cl_rel: str, source_
     for r in rows:
         sanitized_rows.append({k: r.get(k, "") for k in target_fieldnames})
 
-    with TRACKER_FILE.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=target_fieldnames)
-        writer.writeheader()
-        writer.writerows(sanitized_rows)
+    atomic_write_csv(TRACKER_FILE, target_fieldnames, sanitized_rows)
 
 
 def update_seen_jobs(job_key: str, display_company: str = ""):
@@ -1612,15 +1715,14 @@ def update_seen_jobs(job_key: str, display_company: str = ""):
     if not SEEN_JOBS_FILE.is_file():
         return
     try:
-        with SEEN_JOBS_FILE.open(encoding="utf-8") as f:
-            data = json.load(f)
-        seen = data.get("seen", {})
-        if job_key in seen:
+        def mark_drafted(seen):
+            if job_key not in seen:
+                return False
             seen[job_key]["status"] = "drafted"
             if display_company:
                 seen[job_key]["display_company"] = display_company
-            with SEEN_JOBS_FILE.open("w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            return True
+        update_job_state(SEEN_JOBS_FILE, mark_drafted)
     except Exception as e:
         print(f"Warning: Could not update seen_jobs.json: {e}", file=sys.stderr)
 
@@ -1632,6 +1734,25 @@ def verify_generated_pdf(path, pages):
     return result.returncode == 0
 
 
+def restore_experience_if_needed(source, metadata):
+    """Restore original bullets once, without repeating model drafting."""
+    rewrites = metadata.get('bullet_rewrites', {})
+    applied = rewrites.get('applied', [])
+    if not applied or rewrites.get('layout_fallback'):
+        return False
+    from tools.bullet_tailoring import restore_original_bullets
+    original = source.read_text(encoding='utf-8')
+    restored = restore_original_bullets(original, applied, escape_latex)
+    if restored == original:
+        return False
+    source.write_text(restored, encoding='utf-8')
+    rewrites['layout_fallback'] = True
+    rewrites['applied'] = []
+    note = 'Original experience bullets restored to preserve the CV page and layout constraints.'
+    metadata.setdefault('quality_warnings', []).append(note)
+    return True
+
+
 def required_attachments(description):
     patterns = [
         (r'enrollment certificate|certificate of enrollment|immatrikulationsbescheinigung', 'Enrollment certificate'),
@@ -1641,7 +1762,22 @@ def required_attachments(description):
     return [label for pattern, label in patterns if re.search(pattern, description, re.I)]
 
 
+def application_archive_dir(company: str, role: str) -> Path:
+    clean_r = clean_title(role)
+    role_slug = "".join(w.capitalize() for w in clean_r.split() if w.isalnum()) or "Role"
+    return DOCUMENTS_DIR / f"{sanitize_company_name(company)}_{role_slug}"
+
+
 def generate_for_job(job: dict) -> dict:
+    # Company-level output names are shared: serialize CLI and dashboard writers.
+    lock_dir = ROOT / "job_scraper"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    with (lock_dir / "generation.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        return _generate_with_diagnostics(job)
+
+
+def _generate_with_diagnostics(job: dict) -> dict:
     """Retain a private actionable error report without mutating application records."""
     try:
         result = _generate_for_job(job)
@@ -1706,7 +1842,6 @@ def _generate_for_job(job: dict) -> dict:
 
     company_pascal = sanitize_company_name(company)
     clean_r = clean_title(title)
-    role_slug = "".join(w.capitalize() for w in clean_r.split() if w.isalnum()) or "Role"
 
     # Detect individual contact person / recruiter from job data, tracker history, or description
     existing_tracker_cp = ""
@@ -1787,6 +1922,8 @@ def _generate_for_job(job: dict) -> dict:
                             break
                 if not compiled:
                     compiled = compile_cv_with_summary_fit("lualatex", cv_tex_path, CV_DIR)
+            if not compiled and restore_experience_if_needed(cv_tex_path, generation_metadata):
+                compiled = compile_cv_with_summary_fit("lualatex", cv_tex_path, CV_DIR)
             return compiled
 
         def compile_cl():
@@ -1815,6 +1952,10 @@ def _generate_for_job(job: dict) -> dict:
             except Exception:
                 pass
 
+    if cv_pages != 2 and restore_experience_if_needed(cv_tex_path, generation_metadata):
+        if compile_cv_with_summary_fit("lualatex", cv_tex_path, CV_DIR):
+            cv_pages = get_pdf_page_count(cv_pdf_path)
+
     if cv_pages != 2 or cl_pages != 1:
         return {
             "success": False,
@@ -1825,11 +1966,23 @@ def _generate_for_job(job: dict) -> dict:
     if not verify_generated_pdf(cv_pdf_path, 2) or not verify_generated_pdf(cl_pdf_path, 1):
         return {"success": False, "error": "PDF text-extraction verification failed; application records were not updated."}
 
+    # Optional comparisons and formatting warnings cannot block usable documents.
+    # Missing/corrupted contacts confirmed by all usable extractors are real failures.
+    try:
+        from tools.application_pdf_audit import audit_application
+        readability = audit_application(cv_pdf_path, cl_pdf_path,
+            cv_tex_path.read_text(encoding='utf-8'), cl_tex_path.read_text(encoding='utf-8'), technology_review)
+    except Exception as exc:
+        readability = {'errors': [], 'warnings': ['Additional PDF audit unavailable (' + type(exc).__name__ + '); existing PDF verification passed.']}
+    if readability['errors']:
+        return {'success': False, 'verification_status': 'readability_failed', 'ats_readability': readability,
+                'error': 'PDF contact verification failed: ' + '; '.join(readability['errors'])}
+
     cv_rel = f"cv/{cv_base}.pdf"
     cl_rel = f"cover_letters/{cl_base}.pdf"
 
     # 5. Archive
-    archive_dir = DOCUMENTS_DIR / f"{company_pascal}_{role_slug}"
+    archive_dir = application_archive_dir(company, title)
     archive_dir.mkdir(parents=True, exist_ok=True)
     if cv_pdf_path.is_file():
         shutil.copy2(cv_pdf_path, archive_dir / cv_pdf_path.name)
@@ -1845,6 +1998,7 @@ def _generate_for_job(job: dict) -> dict:
         'generation': generation_metadata,
         'plan': tailoring_plan,
         'technology_review': technology_review,
+        'ats_readability': readability,
         'cover_letter_body_words': cover_letter_body_words(cl_code),
         'discovery_url': job.get('discovery_url', url),
         'description_source_url': job.get('description_source_url', url),
@@ -1864,7 +2018,8 @@ def _generate_for_job(job: dict) -> dict:
         "generator_version": GENERATOR_VERSION,
         "generation": generation_metadata,
         "tailoring_plan": tailoring_plan,
-        "tailoring_warnings": tailoring_plan.get("review_warnings", []) + generation_metadata.get("quality_warnings", []),
+        "tailoring_warnings": tailoring_plan.get("review_warnings", []) + generation_metadata.get("quality_warnings", []) + readability.get('warnings', []),
+        "ats_readability": readability,
         "technology_review": technology_review,
         "cover_letter_body_words": cover_letter_body_words(cl_code),
         "skills_to_confirm": [r["technology"] for r in technology_review["technologies"] if r["status"] != "confirmed"],
@@ -1874,8 +2029,8 @@ def _generate_for_job(job: dict) -> dict:
         "company": company,
         "role": clean_r,
         "contact_person": contact_person,
-        "cv_file": cv_rel,
-        "cover_letter_file": cl_rel,
+        "cv_file": str((archive_dir / cv_pdf_path.name).relative_to(ROOT)),
+        "cover_letter_file": str((archive_dir / cl_pdf_path.name).relative_to(ROOT)),
         "cv_pages": cv_pages,
         "cl_pages": cl_pages,
         "archive_dir": str(archive_dir.relative_to(ROOT)),

@@ -26,11 +26,14 @@ This repo is a job application workspace. Antigravity acts as a career advisor a
 - **Cover letter language:** English (ALWAYS write cover letters in English, even if the job posting is in German; ALWAYS explicitly include English C1 fluent and German intermediate level proficiency in the body/closing)
 - **Document naming convention:** Tailored CVs must strictly be named `YashwanthGotike_<CompanyName>_CV` (source: `cv/YashwanthGotike_<CompanyName>_CV.tex`, output: `cv/YashwanthGotike_<CompanyName>_CV.pdf`); Cover Letters must strictly be named `YashwanthGotike_<CompanyName>_CoverLetter` (source: `cover_letters/YashwanthGotike_<CompanyName>_CoverLetter.tex`, output: `cover_letters/YashwanthGotike_<CompanyName>_CoverLetter.pdf`).
 - **Job scraping recency window:** Strictly max 2 days (`--jobage 2` / within the last 48 hours). Discard postings older than 2 days or missing verified publication dates across LinkedIn, FreeHire, Arbeitsagentur, StepStone, XING, and any future portals; never default missing dates to today.
+- **Excluded job type:** Exclude Duales Studium / dual-study programme postings across all portals. Follow the hard gate in [.claude/skills/job-scraper/SKILL.md](.claude/skills/job-scraper/SKILL.md); ordinary Werkstudent, internships and thesis roles remain eligible.
 - **Language scraping constraint (German C1 Gate):** NEVER scrape, save, or present any job posting requiring minimum German C1, C2, verhandlungssicher, or native German. Only accept roles compatible with German B2 / English C1.
 - **Status:** M.Sc. Student in Web and Data Science at University of Koblenz (Expected graduation: 30/09/2027 for Werkstudent/Praktikum; available up to 20 hours/week during semester; available with 1 month notice for full-time roles)
 - **Work authorization:** Germany work authorization; sponsorship not needed; open to full-time, part-time, or werkstudent
 - **Earliest Start Date:** 1 month from date of application (or confirmed flexible agreement; never claim "contribute immediately" when recorded start date is later)
 - **LinkedIn headline:** "Data Analyst | Data Engineer | Business Intelligence Specialist"
+- **CV target headline:** Follow the established-role mapping in [05-cv-templates.md](.claude/skills/job-application-assistant/05-cv-templates.md#job-title-based-cv-headline). Preserve recognized disciplines such as Data Scientist; map generic/branded titles from their responsibilities (e.g. Flexikum Technical Consultant for agentic AI → AI Engineer), never copy them literally.
+- **CV Technical Skills grouping:** Follow the role-specific grouping rules in [05-cv-templates.md](.claude/skills/job-application-assistant/05-cv-templates.md#role-specific-technical-skills-groups): four coherent groups by default, with a fifth for a distinct relevant requirement.
 
 ### Education
 - **Master of Science (M.Sc.) in Web and Data Science** (10/2024 - 09/2027 expected) - University of Koblenz, Germany
@@ -72,6 +75,7 @@ This repo is a job application workspace. Antigravity acts as a career advisor a
   - Scalable real-time ingestion pipeline with Apache Airflow, Python ETL, AWS EC2, and fault-tolerant streaming architecture.
 
 ### Technical Skills
+- **Confirmed MS Office proficiency:** Microsoft Excel and Microsoft PowerPoint; see the dated confirmation in `01-candidate-profile.md`. Include both explicitly when requested by a posting.
 - **Confirmed platform operations skills:** See the dated confirmation in `01-candidate-profile.md` for Kubernetes, Terraform, Docker, CI/CD, cloud/LLM deployment, Windows/Linux administration, monitoring and security; use its scope limits when drafting.
 - **Primary:** Python, SQL, ETL/ELT Pipelines, Apache Spark, Airflow, Azure Data Factory, Databricks, Power BI, DAX, LLMs, RAG, Vector Databases
 - **Secondary:** R, Scala, Java, .NET, Tableau, Scikit-learn, TensorFlow, PyTorch, MLflow, DVC, Docker, GitHub Actions
@@ -90,6 +94,12 @@ This repo is a job application workspace. Antigravity acts as a career advisor a
 - Architecting resilient data platforms, modern lakehouses, and high-throughput ETL/ELT pipelines.
 - Deploying LLM/GenAI applications, RAG pipelines, and intelligent agentic workflows that solve tangible user problems.
 - Deriving actionable analytical insights, automating BI reporting, and driving measurable KPI improvements.
+
+### Generation Priorities (15 October 2026)
+- Preserve the CV section order: Technical Skills, Professional Experience, Key Technical Projects, Education, Languages & Honors. Never interchange Professional Experience and projects. For AI/ML roles, lead Technical Skills with relevant machine-learning tools and rank projects by relevance within their existing section; retain the exact 2-page constraint.
+- Cover letters must include a named employer example with a verified outcome, connected to an actual job responsibility. Replace generic deployment prose with this evidence while retaining the strongest relevant project example. Never invent project metrics or transfer independent-project experience to an employer.
+- Prioritize job-description relevance, evidence-supported keyword coverage, and dependable CV/cover-letter generation. Optional rewrites or additional parser checks must fall back to verified originals or explicit review warnings when unavailable.
+- Skills absent from the profile are unconfirmed: surface them for candidate confirmation without inventing proficiency, employer attribution, projects, or outcomes.
 
 ### Target Roles & Sectors
 - **Target Roles:** Data Engineer, Data Analyst, Data Scientist, AI Engineer, ML Engineer, Business Analyst, Business Intelligence Analyst (any data-focused role) across Junior, Mid, and Senior (5+ years exp)
